@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>○○○デコピンゲーム</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(#e9f7ff, #fff5e8);
+  font-family: sans-serif;
+  color: #293746;
+  user-select: none;
+}
+
+.game {
+  width: min(94vw, 440px);
+  text-align: center;
+  padding: 24px 12px;
+}
+
+h1 {
+  font-size: 30px;
+  margin: 0 0 8px;
+}
+
+.description {
+  color: #657789;
+  margin-bottom: 18px;
+}
+
+.score {
+  font-size: 21px;
+  font-weight: bold;
+  margin: 12px;
+}
+
+.stage {
+  position: relative;
+  height: 400px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.object {
+  position: relative;
+  width: 260px;
+  height: 330px;
+  flex-shrink: 0;
+}
+
+.ball {
+  position: absolute;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 25%, #b8f1ff, #51bce0 65%, #2186ac);
+  border: 3px solid #287f9d;
+  box-shadow: 0 8px 0 #c4dce5;
+  z-index: 2;
+}
+
+.ball.left {
+  left: 22px;
+  bottom: 15px;
+}
+
+.ball.right {
+  right: 22px;
+  bottom: 15px;
+}
+
+.rod {
+  position: absolute;
+  width: 62px;
+  height: 225px;
+  left: 99px;
+  bottom: 80px;
+  border-radius: 22px 22px 8px 8px;
+  background: linear-gradient(90deg, #70401f, #bd8150 35%, #8b542d 75%, #603719);
+  border: 3px solid #59351e;
+  transform-origin: bottom center;
+  cursor: pointer;
+  z-index: 1;
+  touch-action: manipulation;
+  box-shadow: 5px 4px 0 #d3c0ac;
+}
+
+.rod::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  bottom: 12px;
+  width: 7px;
+  border-radius: 8px;
+  background: #d9a578;
+  opacity: .8;
+}
+
+.rod:focus-visible {
+  outline: 4px solid #ffae42;
+  outline-offset: 4px;
+}
+
+.object.flick .rod {
+  animation: flick .38s ease-out;
+}
+
+.object.flick .ball {
+  animation: wobble .38s ease-out;
+}
+
+@keyframes flick {
+  0% { transform: rotate(0); }
+  25% { transform: rotate(24deg); }
+  55% { transform: rotate(-13deg); }
+  78% { transform: rotate(8deg); }
+  100% { transform: rotate(0); }
+}
+
+@keyframes wobble {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -8px 2px; }
+  55% { translate: 7px -2px; }
+  78% { translate: -3px 1px; }
+}
+
+.bubble {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  background: white;
+  border: 3px solid #526779;
+  border-radius: 22px;
+  padding: 12px 16px;
+  font-size: 23px;
+  font-weight: bold;
+  box-shadow: 3px 4px 0 #c5d1d8;
+  opacity: 0;
+  transform: scale(.5) rotate(8deg);
+  transition: .15s;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.bubble.show {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+
+button {
+  border: none;
+  background: #ff9d38;
+  color: white;
+  font-size: 21px;
+  font-weight: bold;
+  border-radius: 16px;
+  padding: 15px 30px;
+  box-shadow: 0 5px 0 #d97820;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #d97820;
+}
+
+.hint {
+  font-size: 13px;
+  color: #71818d;
+  margin-top: 18px;
+}
+
+@media (max-height: 650px) {
+  .stage { height: 330px; }
+  .object { transform: scale(.82); }
+}
+</style>
+</head>
+<body>
+<main class="game">
+  <h1>デコピンゲーム</h1>
+  <div class="description">真ん中の極太の棒をデコピンしよう！</div>
+  <div class="score">デコピン回数：<span id="count">0</span></div>
+
+  <div class="stage">
+    <div class="object" id="object">
+      <div class="bubble" id="bubble">痛っ！</div>
+      <div
+        class="rod"
+        id="rod"
+        role="button"
+        tabindex="0"
+        aria-label="棒をデコピンする"
+      ></div>
+      <div class="ball left"></div>
+      <div class="ball right"></div>
+    </div>
+  </div>
+
+  <button id="flickButton">デコピン！ 👆</button>
+  <div class="hint">棒を直接クリック・タップしてもOK！</div>
+</main>
+
+<script>
+const object = document.getElementById("object");
+const rod = document.getElementById("rod");
+const bubble = document.getElementById("bubble");
+const countText = document.getElementById("count");
+const flickButton = document.getElementById("flickButton");
+
+let count = 0;
+let bubbleTimer;
+
+const words = [
+  "痛っ！",
+  "いてて！",
+  "やめてー！",
+  "強いっ！",
+  "うわっ！",
+  "もう一回！？",
+  "いたたた！",
+  "効いたー！"
+];
+
+function flick() {
+  count++;
+  countText.textContent = count;
+
+  object.classList.remove("flick");
+  void object.offsetWidth;
+  object.classList.add("flick");
+
+  bubble.textContent = words[Math.floor(Math.random() * words.length)];
+  bubble.classList.add("show");
+
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(() => {
+    bubble.classList.remove("show");
+  }, 1100);
+}
+
+rod.addEventListener("click", flick);
+flickButton.addEventListener("click", flick);
+
+rod.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    flick();
+  }
+});
+
+object.addEventListener("animationend", (event) => {
+  if (event.animationName === "wobble") {
+    object.classList.remove("flick");
+  }
+});
+</script>
+</body>
+</html>
