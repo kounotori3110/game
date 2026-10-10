@@ -1,0 +1,994 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEON DASH</title>
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #050713;
+  color: white;
+  font-family: Arial, Meiryo, sans-serif;
+  user-select: none;
+}
+canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+button { cursor: pointer; }
+#hud {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  right: 115px;
+  display: none;
+  justify-content: space-between;
+  gap: 7px;
+  pointer-events: none;
+}
+.stat {
+  padding: 8px 11px;
+  border: 1px solid #244c70;
+  border-radius: 12px;
+  background: #071322dd;
+  font-size: 11px;
+  color: #a8cce5;
+}
+.stat strong {
+  display: block;
+  color: #5af3ff;
+  font-size: 20px;
+  margin-top: 3px;
+}
+#soundButton {
+  position: fixed;
+  z-index: 5;
+  top: 14px;
+  right: 12px;
+  display: none;
+  padding: 10px;
+  color: #68f5ff;
+  background: #08192b;
+  border: 1px solid #27728c;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #030611bd;
+  backdrop-filter: blur(7px);
+  overflow-y: auto;
+}
+.panel {
+  width: min(430px, 100%);
+  padding: 25px 21px;
+  text-align: center;
+  border: 1px solid #245b83;
+  border-radius: 22px;
+  background: linear-gradient(150deg,#101b37f5,#080a19f5);
+  box-shadow: 0 0 45px #00d9ff19;
+}
+.logo {
+  margin: 0;
+  font-size: clamp(35px, 9vw, 54px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 2px;
+  color: #69f6ff;
+  text-shadow: 0 0 10px #00d9ff,0 0 32px #008cff88;
+}
+.subtitle {
+  color: #ff5bd7;
+  letter-spacing: 4px;
+  font-size: 11px;
+  margin-top: 5px;
+}
+.description {
+  color: #d2e3f4;
+  line-height: 1.9;
+  font-size: 14px;
+  margin: 19px 0;
+}
+.cyan { color: #5cf4ff; }
+.pink { color: #ff5bd7; }
+.gold { color: #ffda6a; }
+.mainButton {
+  width: 100%;
+  padding: 15px;
+  color: #06101c;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(90deg,#5af4ff,#83ffda);
+  box-shadow: 0 0 24px #00d9ff45;
+}
+.mainButton:active { transform: scale(.98); }
+.smallNote {
+  color: #8199b8;
+  font-size: 11px;
+  margin-top: 13px;
+  line-height: 1.7;
+}
+#controls {
+  display: none;
+  position: fixed;
+  z-index: 4;
+  bottom: max(18px,env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  justify-content: space-between;
+  padding: 0 22px;
+  pointer-events: none;
+}
+.moveButton {
+  width: 76px;
+  height: 62px;
+  border: 1px solid #45dff5a0;
+  border-radius: 18px;
+  color: #70f7ff;
+  background: #0a1b30d9;
+  font-size: 27px;
+  pointer-events: auto;
+  touch-action: none;
+}
+.moveButton:active { background: #16445a; }
+@media (max-height: 560px) {
+  .panel { padding: 14px 18px; }
+  .description { margin: 10px 0; line-height: 1.6; }
+  .logo { font-size: 34px; }
+  .moveButton { height: 45px; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div class="stat">SCORE<strong id="score">0</strong></div>
+  <div class="stat">BEST<strong id="best">0</strong></div>
+  <div class="stat">HITS<strong id="hits">0 / 3</strong></div>
+</div>
+
+<button id="soundButton">♫ BGM ON</button>
+
+<div id="menu" class="overlay">
+  <div class="panel">
+    <h1 class="logo">NEON DASH</h1>
+    <div class="subtitle">CYBER SURVIVAL</div>
+
+    <div class="description">
+      ネオンの世界を駆け抜けろ！<br>
+      障害物を避けて、ダイヤを集めよう！<br><br>
+      <span class="cyan">◆ 水色のダイヤ：+50点</span><br>
+      取ると「チャン♪」と鳴る！<br><br>
+      <span class="pink">■ ピンクの障害物</span><br>
+      ぶつかると「ダン！！」と鳴る！<br>
+      <span class="gold">♥ 3回当たるとゲームオーバー</span><br><br>
+      <span class="cyan">← → キー / A・D キー</span><br>
+      スマホは下のボタンで操作！
+    </div>
+
+    <button id="startButton" class="mainButton">▶ START</button>
+    <div class="smallNote">
+      BGMはスタート後に再生されます。<br>
+      右上のボタンでBGMと効果音を切り替えられます。
+    </div>
+  </div>
+</div>
+
+<div id="gameOver" class="overlay" style="display:none">
+  <div class="panel">
+    <h1 class="logo" style="font-size:38px">GAME OVER</h1>
+    <div class="description">
+      SCORE<br>
+      <span class="cyan" id="finalScore"
+        style="font-size:38px;font-weight:bold">0</span><br>
+      BEST: <span id="finalBest" class="gold">0</span>
+    </div>
+    <button id="restartButton" class="mainButton">↻ RETRY</button>
+    <div class="smallNote">もう一度ハイスコアに挑戦しよう！</div>
+  </div>
+</div>
+
+<div id="controls">
+  <button class="moveButton" id="leftButton">◀</button>
+  <button class="moveButton" id="rightButton">▶</button>
+</div>
+
+<script>
+"use strict";
+
+// ============================
+// 基本設定
+// ============================
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const menu = document.getElementById("menu");
+const gameOverScreen = document.getElementById("gameOver");
+const hud = document.getElementById("hud");
+const controls = document.getElementById("controls");
+const soundButton = document.getElementById("soundButton");
+
+let W = innerWidth;
+let H = innerHeight;
+let dpr = 1;
+
+function resize() {
+  W = innerWidth;
+  H = innerHeight;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.floor(W * dpr);
+  canvas.height = Math.floor(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  updatePlayerPosition();
+}
+addEventListener("resize", resize);
+
+// ============================
+// ゲームの状態
+// ============================
+
+let running = false;
+let score = 0;
+let hits = 0;
+let best = 0;
+let elapsed = 0;
+let lastTime = 0;
+let spawnTimer = 0;
+let objects = [];
+let particles = [];
+let stars = [];
+let moveLeft = false;
+let moveRight = false;
+let lastMilestone = 0;
+
+try {
+  best = Number(localStorage.getItem("neonDashBest")) || 0;
+} catch (e) {
+  best = 0;
+}
+
+document.getElementById("best").textContent = best;
+
+const player = {
+  x: W / 2,
+  y: H * 0.78,
+  size: 15,
+  speed: 330
+};
+
+function updatePlayerPosition() {
+  player.y = Math.min(H - 110, H * 0.78);
+  player.x = Math.max(22, Math.min(W - 22, player.x));
+}
+
+// ============================
+// 背景
+// ============================
+
+function makeStars() {
+  stars = [];
+  for (let i = 0; i < 85; i++) {
+    stars.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      size: Math.random() * 1.8 + 0.4,
+      speed: Math.random() * 45 + 15
+    });
+  }
+}
+makeStars();
+
+function drawBackground(dt) {
+  const gradient = ctx.createLinearGradient(0, 0, W, H);
+  gradient.addColorStop(0, "#070b20");
+  gradient.addColorStop(0.55, "#08091a");
+  gradient.addColorStop(1, "#16091f");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  const glow = ctx.createRadialGradient(
+    W * 0.5, H * 0.4, 0,
+    W * 0.5, H * 0.4, Math.max(W, H) * 0.65
+  );
+  glow.addColorStop(0, "#09284a25");
+  glow.addColorStop(1, "#00000000");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, H);
+
+  for (const s of stars) {
+    s.y += s.speed * dt;
+    if (s.y > H) {
+      s.y = 0;
+      s.x = Math.random() * W;
+    }
+    ctx.fillStyle = "#78dfff";
+    ctx.globalAlpha = 0.25 + s.size * 0.25;
+    ctx.fillRect(s.x, s.y, s.size, s.size);
+  }
+  ctx.globalAlpha = 1;
+
+  const horizon = H * 0.43;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, horizon, W, H - horizon);
+  ctx.clip();
+
+  ctx.strokeStyle = "#164b75";
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.38;
+
+  for (let i = -10; i <= 10; i++) {
+    ctx.beginPath();
+    ctx.moveTo(W / 2 + i * 9, horizon);
+    ctx.lineTo(W / 2 + i * W * 0.14, H);
+    ctx.stroke();
+  }
+
+  const offset = (elapsed * 100) % 40;
+  for (let y = horizon + offset; y < H; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+
+  ctx.strokeStyle = "#00dfff";
+  ctx.globalAlpha = 0.45;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(5, 0);
+  ctx.lineTo(5, H);
+  ctx.moveTo(W - 5, 0);
+  ctx.lineTo(W - 5, H);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+// ============================
+// プレイヤー
+// ============================
+
+function drawPlayer() {
+  const s = player.size;
+
+  ctx.save();
+  ctx.translate(player.x, player.y);
+  ctx.shadowColor = "#36f7ff";
+  ctx.shadowBlur = 24;
+  ctx.fillStyle = "#45f5ff";
+
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 1.4);
+  ctx.lineTo(s, 0);
+  ctx.lineTo(0, s * 1.4);
+  ctx.lineTo(-s, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 0.65);
+  ctx.lineTo(s * 0.43, 0);
+  ctx.lineTo(0, s * 0.65);
+  ctx.lineTo(-s * 0.43, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================
+// ダイヤと障害物
+// ============================
+
+function spawnObject() {
+  const isDiamond = Math.random() < 0.23;
+
+  objects.push({
+    x: 25 + Math.random() * Math.max(1, W - 50),
+    y: -25,
+    size: isDiamond ? 11 : 15 + Math.random() * 5,
+    type: isDiamond ? "diamond" : "obstacle",
+    speed: 190 + Math.min(elapsed * 3.5, 230),
+    rotation: Math.random() * Math.PI
+  });
+}
+
+function drawDiamond(o) {
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.rotate(o.rotation);
+  ctx.shadowColor = "#40f5ff";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#45f4ff";
+
+  ctx.beginPath();
+  ctx.moveTo(0, -o.size * 1.4);
+  ctx.lineTo(o.size, 0);
+  ctx.lineTo(0, o.size * 1.4);
+  ctx.lineTo(-o.size, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#ffffff";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawObstacle(o) {
+  ctx.save();
+  ctx.translate(o.x, o.y);
+  ctx.rotate(o.rotation);
+  ctx.shadowColor = "#ff35d2";
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = "#f92bbd";
+  ctx.fillRect(-o.size, -o.size, o.size * 2, o.size * 2);
+
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#ffc2f0";
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(-o.size, -o.size, o.size * 2, o.size * 2);
+  ctx.restore();
+}
+
+// ============================
+// エフェクト
+// ============================
+
+function burst(x, y, color, count = 12) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 150 + 35;
+
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      life: 0.5 + Math.random() * 0.4,
+      maxLife: 0.9,
+      size: Math.random() * 4 + 2,
+      color
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    p.vx *= 0.985;
+    p.vy *= 0.985;
+
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+
+    ctx.globalAlpha = Math.min(1, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.shadowColor = p.color;
+    ctx.shadowBlur = 10;
+    ctx.fillRect(p.x, p.y, p.size, p.size);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.shadowBlur = 0;
+}
+
+// ============================
+// ゲーム更新
+// ============================
+
+function update(dt) {
+  elapsed += dt;
+
+  const direction = (moveRight ? 1 : 0) - (moveLeft ? 1 : 0);
+  player.x += direction * player.speed * dt;
+  updatePlayerPosition();
+
+  const spawnInterval = Math.max(0.31, 0.78 - elapsed * 0.003);
+  spawnTimer += dt;
+
+  while (spawnTimer >= spawnInterval) {
+    spawnTimer -= spawnInterval;
+    spawnObject();
+  }
+
+  const currentMilestone = Math.floor(elapsed);
+  if (currentMilestone > lastMilestone) {
+    score += currentMilestone - lastMilestone;
+    lastMilestone = currentMilestone;
+  }
+
+  for (let i = objects.length - 1; i >= 0; i--) {
+    const o = objects[i];
+    o.y += o.speed * dt;
+    o.rotation += dt * (o.type === "diamond" ? 1.7 : 0.7);
+
+    const dx = o.x - player.x;
+    const dy = o.y - player.y;
+    const distance = Math.hypot(dx, dy);
+    const collisionDistance = player.size + o.size * 0.75;
+
+    if (distance < collisionDistance) {
+      if (o.type === "diamond") {
+        score += 50;
+        burst(o.x, o.y, "#50f5ff", 14);
+        playDiamondSound();
+      } else {
+        hits++;
+        burst(o.x, o.y, "#ff3fcf", 20);
+        playHitSound();
+        updateHUD();
+
+        if (hits >= 3) {
+          objects.splice(i, 1);
+          endGame();
+          return;
+        }
+      }
+
+      objects.splice(i, 1);
+      updateHUD();
+      continue;
+    }
+
+    if (o.y > H + 35) {
+      objects.splice(i, 1);
+    }
+  }
+
+  updateHUD();
+}
+
+function updateHUD() {
+  document.getElementById("score").textContent = score;
+  document.getElementById("hits").textContent = hits + " / 3";
+}
+
+// ============================
+// ゲーム開始・終了
+// ============================
+
+function startGame() {
+  score = 0;
+  hits = 0;
+  elapsed = 0;
+  spawnTimer = 0;
+  lastMilestone = 0;
+  objects = [];
+  particles = [];
+  player.x = W / 2;
+  updatePlayerPosition();
+  updateHUD();
+
+  menu.style.display = "none";
+  gameOverScreen.style.display = "none";
+  hud.style.display = "flex";
+  controls.style.display = "flex";
+  soundButton.style.display = "block";
+
+  running = true;
+  lastTime = performance.now();
+  startMusic();
+}
+
+function endGame() {
+  running = false;
+  stopMusic();
+
+  best = Math.max(best, score);
+  try {
+    localStorage.setItem("neonDashBest", String(best));
+  } catch (e) {}
+
+  document.getElementById("best").textContent = best;
+  document.getElementById("finalScore").textContent = score;
+  document.getElementById("finalBest").textContent = best;
+  gameOverScreen.style.display = "flex";
+}
+
+// ============================
+// メインループ
+// ============================
+
+function frame(now) {
+  const dt = Math.min((now - lastTime) / 1000 || 0, 0.04);
+  lastTime = now;
+
+  drawBackground(dt);
+
+  if (running) {
+    update(dt);
+
+    for (const o of objects) {
+      if (o.type === "diamond") drawDiamond(o);
+      else drawObstacle(o);
+    }
+
+    drawPlayer();
+  } else {
+    const oldX = player.x;
+    const oldY = player.y;
+    player.x = W / 2;
+    player.y = H * 0.77;
+    drawPlayer();
+    player.x = oldX;
+    player.y = oldY;
+  }
+
+  updateParticles(dt);
+  requestAnimationFrame(frame);
+}
+
+// ============================
+// BGMと効果音
+// ============================
+
+let audioContext = null;
+let masterGain = null;
+let musicTimer = null;
+let nextNoteTime = 0;
+let step = 0;
+let musicMuted = false;
+
+const bpm = 112;
+const beatDuration = 60 / bpm;
+const stepDuration = beatDuration / 2;
+
+const melody = [
+  69, null, 76, 81,
+  79, null, 76, null,
+  72, null, 76, 79,
+  81, null, 79, null
+];
+
+const bassLine = [
+  45, null, null, null,
+  45, null, 48, null,
+  41, null, null, null,
+  43, null, 40, null
+];
+
+function frequency(midi) {
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function playTone(freq, time, duration, type, volume, filterFreq) {
+  if (!audioContext || !masterGain) return;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, time);
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(filterFreq || 3000, time);
+
+  gain.gain.setValueAtTime(0.0001, time);
+  gain.gain.exponentialRampToValueAtTime(
+    Math.max(0.0002, volume), time + 0.012
+  );
+  gain.gain.exponentialRampToValueAtTime(
+    0.0001, time + duration
+  );
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  osc.start(time);
+  osc.stop(time + duration + 0.03);
+}
+
+function playKick(time) {
+  if (!audioContext || !masterGain) return;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(135, time);
+  osc.frequency.exponentialRampToValueAtTime(42, time + 0.13);
+
+  gain.gain.setValueAtTime(0.28, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.16);
+
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(time);
+  osc.stop(time + 0.18);
+}
+
+function playHat(time) {
+  if (!audioContext || !masterGain) return;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  osc.type = "square";
+  osc.frequency.setValueAtTime(8200, time);
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(6500, time);
+
+  gain.gain.setValueAtTime(0.035, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.035);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(masterGain);
+
+  osc.start(time);
+  osc.stop(time + 0.04);
+}
+
+// ダイヤ取得音「チャン♪」
+function playDiamondSound() {
+  if (!audioContext || !masterGain || musicMuted) return;
+
+  const now = audioContext.currentTime;
+  const notes = [880, 1174.66, 1567.98];
+
+  notes.forEach((freq, i) => {
+    const start = now + i * 0.045;
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(freq, start);
+
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.18, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(start);
+    osc.stop(start + 0.34);
+  });
+}
+
+// 障害物に当たった音「ダン！！」
+function playHitSound() {
+  if (!audioContext || !masterGain || musicMuted) return;
+
+  const now = audioContext.currentTime;
+
+  // 低く重い衝撃音
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = "triangle";
+  osc.frequency.setValueAtTime(125, now);
+  osc.frequency.exponentialRampToValueAtTime(38, now + 0.22);
+
+  gain.gain.setValueAtTime(0.42, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+
+  osc.connect(gain);
+  gain.connect(masterGain);
+  osc.start(now);
+  osc.stop(now + 0.32);
+
+  // 衝撃のアタック音
+  const noiseOsc = audioContext.createOscillator();
+  const noiseGain = audioContext.createGain();
+  const filter = audioContext.createBiquadFilter();
+
+  noiseOsc.type = "sawtooth";
+  noiseOsc.frequency.setValueAtTime(75, now);
+  noiseOsc.frequency.exponentialRampToValueAtTime(24, now + 0.12);
+
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(180, now);
+
+  noiseGain.gain.setValueAtTime(0.16, now);
+  noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+
+  noiseOsc.connect(filter);
+  filter.connect(noiseGain);
+  noiseGain.connect(masterGain);
+
+  noiseOsc.start(now);
+  noiseOsc.stop(now + 0.18);
+}
+
+function scheduleMusicStep(time) {
+  const current = step % 16;
+
+  const note = melody[current];
+  if (note !== null) {
+    playTone(frequency(note), time, 0.18, "sawtooth", 0.055, 2200);
+    playTone(frequency(note) * 2, time, 0.09, "triangle", 0.018, 4000);
+  }
+
+  const bass = bassLine[current];
+  if (bass !== null) {
+    playTone(frequency(bass), time, 0.23, "triangle", 0.12, 500);
+  }
+
+  if (current === 0 || current === 8) {
+    playKick(time);
+  }
+
+  if (current === 4 || current === 12) {
+    playTone(190, time, 0.09, "square", 0.045, 1000);
+  }
+
+  if (current % 2 === 0 || current === 7 || current === 15) {
+    playHat(time);
+  }
+
+  step++;
+}
+
+function musicScheduler() {
+  if (!audioContext || musicMuted) return;
+
+  while (nextNoteTime < audioContext.currentTime + 0.12) {
+    scheduleMusicStep(nextNoteTime);
+    nextNoteTime += stepDuration;
+  }
+}
+
+async function startMusic() {
+  try {
+    if (!audioContext) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+
+      audioContext = new AudioCtx();
+      masterGain = audioContext.createGain();
+      masterGain.gain.value = musicMuted ? 0 : 0.65;
+      masterGain.connect(audioContext.destination);
+    }
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    if (musicTimer) clearInterval(musicTimer);
+
+    step = 0;
+    nextNoteTime = audioContext.currentTime + 0.05;
+    musicScheduler();
+    musicTimer = setInterval(musicScheduler, 25);
+
+    soundButton.textContent = musicMuted ? "♫ BGM OFF" : "♫ BGM ON";
+  } catch (e) {
+    console.log("BGMを再生できませんでした。", e);
+  }
+}
+
+function stopMusic() {
+  if (musicTimer) {
+    clearInterval(musicTimer);
+    musicTimer = null;
+  }
+}
+
+soundButton.addEventListener("click", async () => {
+  musicMuted = !musicMuted;
+
+  if (masterGain && audioContext) {
+    const now = audioContext.currentTime;
+    masterGain.gain.cancelScheduledValues(now);
+    masterGain.gain.setTargetAtTime(
+      musicMuted ? 0 : 0.65, now, 0.04
+    );
+  }
+
+  soundButton.textContent = musicMuted ? "♫ BGM OFF" : "♫ BGM ON";
+
+  if (!musicMuted && running) {
+    await startMusic();
+  }
+});
+
+// ============================
+// キーボード操作
+// ============================
+
+addEventListener("keydown", e => {
+  if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+    e.preventDefault();
+  }
+
+  if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+    moveLeft = true;
+  }
+
+  if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+    moveRight = true;
+  }
+
+  if (e.key === " " && !running && menu.style.display !== "none") {
+    startGame();
+  }
+});
+
+addEventListener("keyup", e => {
+  if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+    moveLeft = false;
+  }
+
+  if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+    moveRight = false;
+  }
+});
+
+addEventListener("blur", () => {
+  moveLeft = false;
+  moveRight = false;
+});
+
+// ============================
+// スマホ操作
+// ============================
+
+function bindHold(button, direction) {
+  const start = e => {
+    e.preventDefault();
+    if (direction === "left") moveLeft = true;
+    if (direction === "right") moveRight = true;
+  };
+
+  const end = e => {
+    e.preventDefault();
+    if (direction === "left") moveLeft = false;
+    if (direction === "right") moveRight = false;
+  };
+
+  button.addEventListener("pointerdown", start);
+  button.addEventListener("pointerup", end);
+  button.addEventListener("pointercancel", end);
+  button.addEventListener("pointerleave", end);
+}
+
+bindHold(document.getElementById("leftButton"), "left");
+bindHold(document.getElementById("rightButton"), "right");
+
+document.getElementById("startButton").addEventListener("click", startGame);
+document.getElementById("restartButton").addEventListener("click", startGame);
+
+// 起動
+resize();
+requestAnimationFrame(frame);
+
+</script>
+</body>
+</html>
