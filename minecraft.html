@@ -110,24 +110,41 @@ E：ブロック一覧 / 1〜9、0：選択
       "$roomId": {
         "info": {
           ".read": "auth != null",
-          ".write": "auth != null && (!data.exists() || data.child('owner').val() === auth.uid)"
+          ".write": "auth != null && (!data.exists() || data.child('owner').val() == auth.uid)"
         },
         "cells": {
           ".read": "auth != null",
           "$cellKey": {
             ".write": "auth != null",
-            ".validate": "newData.hasChildren(['action','baseRemoved']) && newData.child('baseRemoved').isBoolean() && (newData.child('action').val() === 'remove' || (newData.child('action').val() === 'place' && newData.child('typeIndex').isNumber()))"
+            ".validate": "newData.hasChildren(['action','baseRemoved']) && newData.child('baseRemoved').isBoolean() && (newData.child('action').val() == 'remove' || (newData.child('action').val() == 'place' && newData.child('typeIndex').isNumber()))"
           }
         },
         "customBlocks": {
           ".read": "auth != null",
           ".write": "auth != null",
-          ".validate": "newData.numChildren() <= 5"
+          "0": {
+            ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()"
+          },
+          "1": {
+            ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()"
+          },
+          "2": {
+            ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()"
+          },
+          "3": {
+            ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()"
+          },
+          "4": {
+            ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()"
+          },
+          "$other": {
+            ".validate": false
+          }
         },
         "players": {
           ".read": "auth != null",
           "$uid": {
-            ".write": "auth != null && auth.uid === $uid"
+            ".write": "auth != null && auth.uid == $uid"
           }
         }
       }
