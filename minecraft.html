@@ -1251,7 +1251,8 @@ function applyCloudCellEdit(key,value){
  // これは各座標の最新状態なので、同じ通知を複数回受け取っても結果は同じ。
  if(value.baseRemoved===true)hideCloudBaseTerrain(x,y,z);
  const current=getSolid(x,y,z);
- if(value.action==="remove"){
+ // 旧バージョンの "break" も受け入れ、現行ルールの "remove" として扱う。
+ if(value.action==="remove"||value.action==="break"){
   removeSolidForCloudEdit(x,y,z);
   if(value.baseRemoved===true)hideCloudBaseTerrain(x,y,z);
   saveWorld();
@@ -1278,7 +1279,9 @@ function publishCloudBlockChange(change){
  if(!cloudCellsRef||!cloudUid||!change)return;
  const key=cloudKeyForCell(change.x,change.y,change.z);
  const baseRemoved=removedTerrain.has(key3(change.x,change.y,change.z));
- const value={action:change.action,baseRemoved,by:cloudUid,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ // ローカル処理は "break"、Realtime Databaseのルールは "remove" を使うため変換する。
+ const cloudAction=change.action==="break"?"remove":change.action;
+ const value={action:cloudAction,baseRemoved,by:cloudUid,updatedAt:firebase.database.ServerValue.TIMESTAMP};
  if(change.action==="place")value.typeIndex=Number(change.typeIndex);
  cloudCellsRef.child(key).set(value).catch(err=>{
   console.warn("クラウドへのブロック保存に失敗",err);
