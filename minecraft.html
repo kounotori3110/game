@@ -92,7 +92,7 @@ E：ブロック一覧 / 1〜9、0：選択
   <div id="connectionMsg">クラウドを初めて使うときは、下の設定を行ってね。</div>
   <details id="firebaseSetup" style="margin-top:12px;text-align:left;background:#0004;border-radius:9px;padding:10px">
    <summary style="cursor:pointer;font-weight:bold">☁ 初回だけ：クラウド接続設定</summary>
-   <div class="note">Firebase Consoleで作った「ウェブアプリの設定オブジェクト」を貼り付けて保存してね。秘密鍵やサービスアカウントのJSONは絶対に貼らないでね。設定はこのブラウザに保存されるよ。</div>
+   <div class="note">この公開版にはMY BLOCK WORLD用のFirebase Web設定が組み込み済みだよ。通常の参加者は設定を入力しなくてOK！開発者が別のFirebaseプロジェクトへ切り替える場合だけ、ここを書き換えて「接続設定を保存」を押してね。秘密鍵やサービスアカウントのJSONは絶対に貼らないでね。</div>
    <label for="firebaseConfigInput">Firebase Web設定（JSONまたは firebaseConfig のオブジェクト）</label>
    <textarea id="firebaseConfigInput" rows="7" spellcheck="false" placeholder='{
   "apiKey": "...",
@@ -1114,10 +1114,23 @@ let cloudReady=false,cloudLastPlayerWrite=0;
 const cloudQueuedCellEvents=new Map();
 let cloudCellHandler=null,cloudPlayerAddedHandler=null,cloudPlayerChangedHandler=null,cloudPlayerRemovedHandler=null,cloudCustomBlocksHandler=null;
 
+// MY BLOCK WORLD 公開版のFirebase Web設定。Web設定なので秘密鍵ではない。
+// アクセス制御は必ず Firebase Realtime Database のセキュリティルールで行う。
+const DEFAULT_FIREBASE_CONFIG={
+ apiKey:"AIzaSyDpP2yicQBpBaw9H7irG41p5QusKDo_Lls",
+ authDomain:"minefun3110.firebaseapp.com",
+ databaseURL:"https://minefun3110-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId:"minefun3110",
+ storageBucket:"minefun3110.firebasestorage.app",
+ messagingSenderId:"1006486721446",
+ appId:"1:1006486721446:web:d1ca3aa986949466443567",
+ measurementId:"G-SKM366F1XF"
+};
 try{
  const savedConfig=localStorage.getItem(FIREBASE_CONFIG_KEY);
- if(savedConfig)firebaseConfigInput.value=JSON.stringify(JSON.parse(savedConfig),null,2);
-}catch(_){}
+ // 利用者が以前から保存している設定があれば尊重し、初回は公開版の設定を使う。
+ firebaseConfigInput.value=JSON.stringify(savedConfig?JSON.parse(savedConfig):DEFAULT_FIREBASE_CONFIG,null,2);
+}catch(_){firebaseConfigInput.value=JSON.stringify(DEFAULT_FIREBASE_CONFIG,null,2);}
 
 function parseFirebaseConfigText(){
  let raw=String(firebaseConfigInput.value||"").trim();
