@@ -44,12 +44,21 @@ canvas{display:block}
 #networkHud{position:fixed;right:12px;top:12px;z-index:4;display:none;align-items:center;gap:8px;max-width:min(480px,55vw);padding:9px 11px;background:#000b;color:white;border-radius:10px;font-size:12px;pointer-events:auto}
 #networkHud #roomDisplay{display:inline-block;max-width:230px;overflow-wrap:anywhere;font-weight:bold;color:#ffe58a}
 #copyRoom{font-size:12px;padding:5px 8px;border:0;border-radius:5px;cursor:pointer}
-#battleHud{position:fixed;top:68px;right:12px;z-index:4;display:none;width:min(255px,54vw);box-sizing:border-box;padding:10px 12px;background:#101820dd;border:1px solid #ffffff70;border-radius:10px;color:#fff;font-size:13px;line-height:1.65;pointer-events:none;box-shadow:0 4px 16px #0005}
-#battleHud .bh-title{font-size:15px;font-weight:bold;color:#ffdf65}
-#battleHud .bh-time{font-size:22px;font-weight:bold;font-variant-numeric:tabular-nums}
+#battleHud{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:4;display:none;width:min(430px,calc(100vw - 28px));box-sizing:border-box;padding:8px 10px;background:#101820ed;border:1px solid #ffffff70;border-radius:12px;color:#fff;font-size:12px;line-height:1.35;pointer-events:none;box-shadow:0 4px 16px #0005}
+#battleHud .battle-main{display:flex;align-items:stretch;justify-content:center;gap:8px}
+#battleHud .battle-stat{display:flex;flex:1;min-width:0;align-items:center;justify-content:center;gap:10px;padding:5px 10px;background:#ffffff12;border-radius:8px}
+#battleHud .battle-caption{font-size:12px;color:#dce7ee;white-space:nowrap}
+#battleHud .bh-time,#battleHud .bh-kills{font-size:25px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
 #battleHud .bh-row{display:flex;justify-content:space-between;gap:8px}
+#battleHud .battle-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:5px 14px;margin-top:6px;color:#dce7ee;font-size:11px}
 #battleHud .bh-danger{color:#ff8c8c;font-weight:bold}
-#battleHud #brWinnerLabel{font-size:11px;color:#ffe58a;margin-top:4px}
+#battleHud #brTopLabel{font-size:11px;color:#dce7ee;text-align:center;margin-top:5px;overflow-wrap:anywhere}
+#battleHud #brWinnerLabel{font-size:11px;color:#ffe58a;text-align:center;margin-top:4px}
+#hotbar .slot.weapon-slot{width:clamp(60px,12vw,82px);height:58px;flex-direction:column;gap:2px;padding:3px;font-size:10px}
+.weapon-slot .weapon-icon{font-size:19px;line-height:21px}
+.weapon-slot .weapon-name{font-size:10px;line-height:12px;white-space:nowrap}
+.weapon-slot.empty .weapon-name{opacity:.55}
+@media(max-width:520px){#battleHud{top:7px;width:min(330px,calc(100vw - 16px));padding:6px 7px}#battleHud .battle-stat{gap:6px;padding:4px 6px}#battleHud .bh-time,#battleHud .bh-kills{font-size:21px}#battleHud .battle-caption{font-size:11px}#networkHud{top:94px;right:8px;max-width:calc(100vw - 16px)}}
 </style>
 </head>
 <body>
@@ -60,12 +69,22 @@ canvas{display:block}
 <span id="status">準備完了</span><br>保存：<span id="saveStatus">自動保存を準備中</span><br>通信：<span id="networkStatus">オフライン</span>
 </div>
 <div id="networkHud"><span>ワールドコード：</span><b id="roomDisplay">-</b><button id="copyRoom" type="button">コピー</button></div>
+<div id="battleHud" aria-live="polite">
+ <div class="battle-main">
+  <div class="battle-stat"><span class="battle-caption">⏱ 残り時間</span><strong class="bh-time" id="brTimerLabel">05:00</strong></div>
+  <div class="battle-stat"><span class="battle-caption">⚔ キル</span><strong class="bh-kills" id="brKillsLabel">0</strong></div>
+ </div>
+ <div class="battle-meta"><span>ROUND <b id="brRoundLabel">1</b></span><span>HP <b id="brHpLabel">100 / 100</b></span><span>武器 <b id="brWeaponLabel">パンチ</b></span></div>
+ <div id="brTopLabel">参加者を待っているよ</div>
+ <div id="brWinnerLabel">武器を拾ってキルを稼ごう！</div>
+</div>
 
 <div id="help">
 WASD：移動 / Space：ジャンプ<br>
-左クリック：敵を攻撃 / Shift＋左クリック：ブロック破壊<br>
-右クリック：ブロック設置 / 武器に近づくと拾う<br>
-E：ブロック一覧 / 1〜9、0：選択
+左クリック：武器で敵を攻撃<br>
+武器に近づくと自動で拾う<br>
+1〜4 または下の枠：武器を選択<br>
+地形は固定（ブロック破壊・設置なし）
 </div>
 
 <div id="crosshair">+</div>
@@ -663,6 +682,10 @@ function infoFromHit(hit){
 
 // 左クリック：狙ったブロックだけを壊す
 function breakBlock(){
+ if(battleMode&&netMode==="cloud"){
+  statusLabel.textContent="バトロワでは地形は固定だよ！ブロックは壊せないよ。";
+  return;
+ }
  const hit=getTarget();
  if(!hit){
   statusLabel.textContent="十字をブロックに合わせてね";
@@ -689,6 +712,10 @@ function breakBlock(){
 
 // 右クリック：狙った面の隣にブロックを置く
 function placeBlock(){
+ if(battleMode&&netMode==="cloud"){
+  statusLabel.textContent="バトロワでは地形は固定だよ！ブロックは置けないよ。";
+  return;
+ }
  const typeIndex=slots[selected];
  if(typeIndex===null){
   statusLabel.textContent="この枠にはブロックがないよ";
@@ -1129,6 +1156,8 @@ const BATTLE_SERVER_CODE="BR01", BATTLE_ROUND_MS=5*60*1000, BATTLE_WAVE_MS=20*10
 let battleStateRef=null,battlePickupRef=null,battleStateHandler=null,battlePickupHandler=null;
 let battleState=null,battleRound=1,battleActiveRound=0,battleMode=false;
 let battleHp=100,battleKills=0,battleAlive=true,battleWeapon="fists",battleLastHitBy="";
+// 4スロットの武器インベントリ。ラウンド開始時はパンチだけを持つ。
+let battleInventoryWeapons=["fists",null,null,null],battleSelectedWeaponSlot=0;
 let battleAttackSeq=0,battleAttackTargetUid="",battleAttackWeapon="fists",battleAttackRound=0,battleAttackAt=0;
 let battleLastAttackAt=0,battleLastRoundAttempt=0,battleLastHudUpdate=0,battleLastPickupCheck=0;
 let battlePickupClaims={},battleSpawnList=[],battlePickupMeshes=new Map(),battlePickupPending=new Set(),battleCreditedDeaths=new Set(),battleCurrentWave=-1;
@@ -1146,6 +1175,47 @@ const BATTLE_WEAPONS={
  blaster:{name:"ブロックブラスター",damage:23,range:24,cooldown:500,color:0x39c7ff},
  sparkBow:{name:"スパークボウ",damage:31,range:34,cooldown:950,color:0xffce45}
 };
+const BATTLE_WEAPON_ICONS={fists:"✊",pixelSword:"⚔️",blaster:"🔫",sparkBow:"🏹"};
+function battleRenderWeaponHotbar(){
+ hotbar.innerHTML="";
+ battleInventoryWeapons.forEach((weaponKey,i)=>{
+  const slot=document.createElement("button");
+  slot.type="button";
+  slot.className="slot weapon-slot"+(i===battleSelectedWeaponSlot?" selected":"")+(!weaponKey?" empty":"");
+  slot.title=`${i+1}番：${weaponKey?BATTLE_WEAPONS[weaponKey].name:"空き"}`;
+  const num=document.createElement("span");num.className="num";num.textContent=String(i+1);slot.appendChild(num);
+  const icon=document.createElement("span");icon.className="weapon-icon";icon.textContent=weaponKey?(BATTLE_WEAPON_ICONS[weaponKey]||"⚔️"):"·";slot.appendChild(icon);
+  const label=document.createElement("span");label.className="weapon-name";label.textContent=weaponKey?BATTLE_WEAPONS[weaponKey].name:"空き";slot.appendChild(label);
+  slot.addEventListener("click",()=>battleSelectWeaponSlot(i));
+  hotbar.appendChild(slot);
+ });
+ const current=BATTLE_WEAPONS[battleWeapon]||BATTLE_WEAPONS.fists;
+ selectedName.textContent=current.name;
+}
+function battleSelectWeaponSlot(slotIndex){
+ if(!battleMode||netMode!=="cloud")return;
+ if(!Number.isInteger(slotIndex)||slotIndex<0||slotIndex>=battleInventoryWeapons.length)return;
+ const weaponKey=battleInventoryWeapons[slotIndex];
+ if(!weaponKey){statusLabel.textContent="その武器枠は空だよ。ワールドの武器に近づいて拾おう！";return;}
+ battleSelectedWeaponSlot=slotIndex;battleWeapon=weaponKey;
+ battleRenderWeaponHotbar();
+ statusLabel.textContent=`${BATTLE_WEAPONS[battleWeapon].name}を装備中`;
+ battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+}
+function battleStoreWeapon(weaponKey){
+ const existing=battleInventoryWeapons.indexOf(weaponKey);
+ if(existing>=0){
+  battleSelectWeaponSlot(existing);
+  statusLabel.textContent=`${BATTLE_WEAPONS[weaponKey].name}はもう持っているよ。装備を切り替えた！`;
+  return true;
+ }
+ const empty=battleInventoryWeapons.findIndex(value=>!value);
+ if(empty<0){statusLabel.textContent="武器枠がいっぱい！";return false;}
+ battleInventoryWeapons[empty]=weaponKey;
+ battleSelectWeaponSlot(empty);
+ statusLabel.textContent=`${BATTLE_WEAPONS[weaponKey].name}を拾ってインベントリに追加！`;
+ return true;
+}
 
 // MY BLOCK WORLD 公開版のFirebase Web設定。Web設定なので秘密鍵ではない。
 // アクセス制御は必ず Firebase Realtime Database のセキュリティルールで行う。
@@ -1364,7 +1434,7 @@ function publishCloudPlayerState(now,force=false){
  if(!cloudPlayersRef||!cloudUid||(!force&&now-cloudLastPlayerWrite<250))return;
  cloudLastPlayerWrite=now;
  const state={name:playerName,x:px,y:feet,z:pz,yaw,
-  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleLastHitBy,
+  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleInventoryWeapons,battleWeaponSlot:battleSelectedWeaponSlot,battleLastHitBy,
   battleAttackSeq,battleAttackTargetUid,battleAttackWeapon,battleAttackRound,battleAttackAt,
   updatedAt:firebase.database.ServerValue.TIMESTAMP};
  cloudPlayersRef.child(cloudUid).set(state).catch(err=>{
@@ -1380,36 +1450,44 @@ async function openCloudRoom(code,firstWorld){
  const stateTx=await battleStateRef.transaction(current=>current?undefined:{round:1,startAt:Date.now(),lastWinner:null},undefined,false);
  battleState=stateTx.snapshot.val()||{round:1,startAt:Date.now(),lastWinner:null};
  battleRound=Math.max(1,Number(battleState.round)||1);
+ const fixedBattleRoom=code===BATTLE_SERVER_CODE;
  cloudReady=false;cloudQueuedCellEvents.clear();
- cloudCellHandler=snap=>handleCloudCellSnapshot(snap);
- cloudCellsRef.on("child_added",cloudCellHandler);
- cloudCellsRef.on("child_changed",cloudCellHandler);
- if(firstWorld){
-  // 初回作成時は現在のローカルワールドをクラウドへ移す。
-  const custom=getCloudCustomBlocks();
-  await cloudRoomRef.child("customBlocks").set(custom);
-  await writeCloudCellMap(cloudCellsRef,buildCurrentCloudCellMap());
- }
- const [customSnap,cellsSnap]=await Promise.all([
-  cloudRoomRef.child("customBlocks").once("value"),cloudCellsRef.once("value")
- ]);
- const customBlocks=customSnap.val();
- replaceNetworkCustomBlocks(Array.isArray(customBlocks)?customBlocks:[]);
- resetToNetworkSnapshot(cloudSnapshotFromMap(cellsSnap.val()||{}));
- cloudReady=true;
- // 初期読込中に届いた変更を最新値として反映。作成直後の自分の変更も同じ処理。
- for(const [key,value] of cloudQueuedCellEvents)applyCloudCellEdit(key,value);
- cloudQueuedCellEvents.clear();
- cloudCustomBlocksHandler=snap=>{
-  if(!snap||!snap.exists())return;
-  const data=snap.val();
-  if(Array.isArray(data))replaceNetworkCustomBlocks(data);
-  for(const [key,value] of Array.from(cloudQueuedCellEvents)){
-   if(value&&value.action==="place"&&Number(value.typeIndex)>=blockTypes.length)continue;
-   cloudQueuedCellEvents.delete(key);applyCloudCellEdit(key,value);
+ if(!fixedBattleRoom){
+  cloudCellHandler=snap=>handleCloudCellSnapshot(snap);
+  cloudCellsRef.on("child_added",cloudCellHandler);
+  cloudCellsRef.on("child_changed",cloudCellHandler);
+  if(firstWorld){
+   // 通常ワールドだけ、既存の地形変更をクラウドへ保存する。
+   const custom=getCloudCustomBlocks();
+   await cloudRoomRef.child("customBlocks").set(custom);
+   await writeCloudCellMap(cloudCellsRef,buildCurrentCloudCellMap());
   }
- };
- cloudRoomRef.child("customBlocks").on("value",cloudCustomBlocksHandler);
+  const [customSnap,cellsSnap]=await Promise.all([
+   cloudRoomRef.child("customBlocks").once("value"),cloudCellsRef.once("value")
+  ]);
+  const customBlocks=customSnap.val();
+  replaceNetworkCustomBlocks(Array.isArray(customBlocks)?customBlocks:[]);
+  resetToNetworkSnapshot(cloudSnapshotFromMap(cellsSnap.val()||{}));
+  cloudReady=true;
+  for(const [key,value] of cloudQueuedCellEvents)applyCloudCellEdit(key,value);
+  cloudQueuedCellEvents.clear();
+  cloudCustomBlocksHandler=snap=>{
+   if(!snap||!snap.exists())return;
+   const data=snap.val();
+   if(Array.isArray(data))replaceNetworkCustomBlocks(data);
+   for(const [key,value] of Array.from(cloudQueuedCellEvents)){
+    if(value&&value.action==="place"&&Number(value.typeIndex)>=blockTypes.length)continue;
+    cloudQueuedCellEvents.delete(key);applyCloudCellEdit(key,value);
+   }
+  };
+  cloudRoomRef.child("customBlocks").on("value",cloudCustomBlocksHandler);
+ }else{
+  // BR01はバトロワ専用：保存済みのブロック変更を読み込まず、地形を固定する。
+  battleMode=true;
+  cloudReady=true;
+  cloudQueuedCellEvents.clear();
+  resetToNetworkSnapshot({removedTerrain:[],placed:[]});
+ }
  cloudPlayerAddedHandler=handleCloudPlayerSnapshot;
  cloudPlayerChangedHandler=handleCloudPlayerSnapshot;
  cloudPlayerRemovedHandler=snap=>{if(snap&&snap.key&&snap.key!==cloudUid)removeRemotePlayer(snap.key);};
@@ -1418,7 +1496,7 @@ async function openCloudRoom(code,firstWorld){
  cloudPlayersRef.on("child_removed",cloudPlayerRemovedHandler);
  await cloudPlayersRef.child(cloudUid).onDisconnect().remove();
  await cloudPlayersRef.child(cloudUid).set({name:playerName,x:px,y:feet,z:pz,yaw,
-  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleLastHitBy,
+  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleInventoryWeapons,battleWeaponSlot:battleSelectedWeaponSlot,battleLastHitBy,
   battleAttackSeq,battleAttackTargetUid,battleAttackWeapon,battleAttackRound,battleAttackAt,
   updatedAt:firebase.database.ServerValue.TIMESTAMP});
  netMode="cloud";showRoomHud();enterGame();
@@ -1609,6 +1687,8 @@ function battleSpawnLocalPlayer(){
  updateCamera();
 }
 function battleResetWeapons(round){
+ battleInventoryWeapons=["fists",null,null,null];battleSelectedWeaponSlot=0;battleWeapon="fists";
+ battleRenderWeaponHotbar();
  battleSpawnList=[];battleCurrentWave=-1;battlePickupClaims={};battlePickupPending.clear();
  for(const [id,group] of Array.from(battlePickupMeshes)){
   battleWeaponGroup.remove(group);group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
@@ -1621,12 +1701,10 @@ function battleEnterRound(state,initial=false){
  const next=Math.max(1,Number(state.round)||1);
  const previous=battleActiveRound;
  battleRound=next;battleActiveRound=next;battleState=state;battleMode=true;
- if(!initial&&previous!==0){
-  // ラウンドの区切りで、設置物と破壊履歴だけを初期地形へ戻す。
-  resetToNetworkSnapshot({removedTerrain:[],placed:[]});
-  statusLabel.textContent="ラウンドが終了！ワールドをリセットして次の対戦を開始するよ。";
- }
- battleHp=100;battleKills=0;battleAlive=true;battleWeapon="fists";battleLastHitBy="";
+ // バトロワは初参加時も毎ラウンドも、ローカル保存や古いクラウド変更を適用せず地形を初期状態に戻す。
+ resetToNetworkSnapshot({removedTerrain:[],placed:[]});
+ if(!initial&&previous!==0)statusLabel.textContent="ラウンドが終了！固定地形のまま次の対戦を開始するよ。";
+ battleHp=100;battleKills=0;battleAlive=true;battleWeapon="fists";battleInventoryWeapons=["fists",null,null,null];battleSelectedWeaponSlot=0;battleLastHitBy="";
  battleAttackSeq=0;battleAttackTargetUid="";battleAttackWeapon="fists";battleAttackRound=next;battleAttackAt=0;
  battleCreditedDeaths.clear();battleSpawnLocalPlayer();battleResetWeapons(next);
  if(state.lastWinner&& !initial){const w=state.lastWinner;statusLabel.textContent=`${w.name||"プレイヤー"}が${Number(w.kills)||0}キルで優勝！次のラウンド開始！`;}
@@ -1672,13 +1750,13 @@ function battleTryPickup(now){
  for(const item of battleSpawnList){
   if(battlePickupClaims[item.id]||battlePickupPending.has(item.id))continue;
   if(Math.hypot(px-item.x,pz-item.z)>1.45||Math.abs(feet-item.y)>2.2)continue;
+  if(!battleInventoryWeapons.includes(item.weapon)&&battleInventoryWeapons.every(Boolean))continue;
   battlePickupPending.add(item.id);
   const pickRef=battlePickupRef.child(item.id);
   pickRef.transaction(current=>current===null?{uid:cloudUid,weapon:item.weapon,pickedAt:Date.now()}:undefined,undefined,false)
    .then(result=>{
     if(result.committed&&battleActiveRound===battleRound){
-     battleWeapon=item.weapon;
-     statusLabel.textContent=`${BATTLE_WEAPONS[item.weapon].name}を拾った！左クリックで攻撃！`;
+     battleStoreWeapon(item.weapon);
      battleUpdateHud();publishCloudPlayerState(performance.now(),true);
     }
    }).catch(err=>{console.warn("武器を拾えませんでした",err);})
@@ -1710,7 +1788,7 @@ function battleAttack(){
  const now=Date.now(),weapon=BATTLE_WEAPONS[battleWeapon]||BATTLE_WEAPONS.fists;
  if(now-battleLastAttackAt<weapon.cooldown)return;
  const target=battleFindTarget();
- if(!target){statusLabel.textContent=battleWeapon==="fists"?"敵を狙うか、Shift＋左クリックでブロックを壊せるよ":"敵が照準にいないよ";return;}
+ if(!target){statusLabel.textContent="敵を照準に合わせて左クリックで攻撃してね";return;}
  battleLastAttackAt=now;battleAttackSeq++;
  battleAttackTargetUid=target.uid;battleAttackWeapon=battleWeapon;battleAttackRound=battleRound;battleAttackAt=now;
  statusLabel.textContent=`${networkPlayerStates.get(target.uid)?.name||"敵"}を攻撃！`;
@@ -1770,6 +1848,7 @@ document.addEventListener("contextmenu",e=>e.preventDefault());
 
 document.addEventListener("mousedown",e=>{
  if(e.button!==0&&e.button!==2)return;
+ if(e.target.closest("#hotbar,#start,#inventory,#networkHud"))return;
 
  if(document.pointerLockElement!==renderer.domElement){
   renderer.domElement.requestPointerLock?.();
@@ -1777,10 +1856,13 @@ document.addEventListener("mousedown",e=>{
  }
 
  if(e.button===0){
-  if(battleMode&&netMode==="cloud"&&!e.shiftKey)battleAttack();
+  if(battleMode&&netMode==="cloud")battleAttack();
   else breakBlock();
  }
- if(e.button===2)placeBlock();
+ if(e.button===2){
+  if(battleMode&&netMode==="cloud")statusLabel.textContent="バトロワでは地形は固定だよ！";
+  else placeBlock();
+ }
 });
 
 function updatePlayer(dt){
@@ -1851,6 +1933,10 @@ document.addEventListener("keydown",e=>{
  if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code))e.preventDefault();
 
  if(e.code==="KeyE"&&!e.repeat){
+  if(battleMode&&netMode==="cloud"){
+   statusLabel.textContent="バトロワではブロック一覧は使わないよ。1〜4で武器を選択してね。";
+   return;
+  }
   const opening=inventory.style.display!=="block";
   inventory.style.display=opening?"block":"none";
   if(opening&&document.pointerLockElement)document.exitPointerLock?.();
@@ -1865,10 +1951,14 @@ document.addEventListener("keydown",e=>{
  };
 
  if(map[e.code]!==undefined){
-  chooseSlot(map[e.code]);
-  statusLabel.textContent=slots[selected]===null
-   ?"空のスロット"
-   :blockTypes[slots[selected]].name+"を選択";
+  if(battleMode&&netMode==="cloud"){
+   if(map[e.code]<battleInventoryWeapons.length)battleSelectWeaponSlot(map[e.code]);
+  }else{
+   chooseSlot(map[e.code]);
+   statusLabel.textContent=slots[selected]===null
+    ?"空のスロット"
+    :blockTypes[slots[selected]].name+"を選択";
+  }
  }
 
  keys[e.code]=true;
