@@ -1005,13 +1005,29 @@ function makeNameSprite(name){
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
  sprite.scale.set(2.4,.6,1);sprite.position.y=2.45;sprite.renderOrder=10;return sprite;
 }
-function removeRemotePlayer(id){
- const av=remoteAvatars.get(id);if(!av)return;
- scene.remove(av.group);av.group.traverse(o=>{if(o.geometry&&o.userData&&o.userData.ownedGeometry)o.geometry.dispose();if(o.material&&o.userData&&o.userData.ownedMaterial)o.material.dispose();});
- remoteAvatars.delete(id);networkPlayerStates.delete(id);
+function disposeRemoteAvatar(id,clearState=true){
+ const av=remoteAvatars.get(id);
+ if(av){
+  scene.remove(av.group);
+  av.group.traverse(o=>{
+   if(o.isSprite&&o.material&&o.material.map)o.material.map.dispose();
+   if(o.geometry)o.geometry.dispose();
+   if(Array.isArray(o.material))o.material.forEach(m=>m&&m.dispose());
+   else if(o.material)o.material.dispose();
+  });
+  remoteAvatars.delete(id);
+ }
+ if(clearState)networkPlayerStates.delete(id);
 }
+function removeRemotePlayer(id){disposeRemoteAvatar(id,true);}
 function upsertRemotePlayer(id,state){
  if(!id||id===netPeer?.id||!state||!Number.isFinite(Number(state.x))||!Number.isFinite(Number(state.y))||!Number.isFinite(Number(state.z)))return;
+ // バトロワで死亡したプレイヤーは、キル判定用の状態だけ残して見た目を即座に消す。
+ if(battleMode&&netMode==="cloud"&&state.battleAlive===false){
+  disposeRemoteAvatar(id,false);
+  networkPlayerStates.set(id,{...state});
+  return;
+ }
  let av=remoteAvatars.get(id);
  if(!av){
   const group=new THREE.Group();
@@ -1159,7 +1175,7 @@ let battleHp=100,battleKills=0,battleAlive=true,battleWeapon="fists",battleLastH
 // 4スロットの武器インベントリ。ラウンド開始時はパンチだけを持つ。
 let battleInventoryWeapons=["fists",null,null,null],battleSelectedWeaponSlot=0;
 let battleAttackSeq=0,battleAttackTargetUid="",battleAttackWeapon="fists",battleAttackRound=0,battleAttackAt=0;
-let battleLastAttackAt=0,battleLastRoundAttempt=0,battleLastHudUpdate=0,battleLastPickupCheck=0;
+let battleLastAttackAt=0,battleLastRoundAttempt=0,battleLastHudUpdate=0,battleLastPickupCheck=0,battleRespawnTimer=null;
 let battlePickupClaims={},battleSpawnList=[],battlePickupMeshes=new Map(),battlePickupPending=new Set(),battleCreditedDeaths=new Set(),battleCurrentWave=-1;
 const battleHud=document.getElementById("battleHud");
 const battleRoundLabel=document.getElementById("brRoundLabel");
@@ -1678,9 +1694,10 @@ function battleUpdateHud(now=Date.now()){
   battleWinnerLabel.textContent=`前回優勝：${w.name||"プレイヤー"}（${Number(w.kills)||0}キル）`;
  }else battleWinnerLabel.textContent="武器を拾ってキルを稼ごう！";
 }
-function battleSpawnLocalPlayer(){
- let hash=0;for(const c of String(cloudUid||playerName))hash=(hash*31+c.charCodeAt(0))>>>0;
- const angle=(hash%360)*Math.PI/180,radius=5+(hash%5);
+function battleSpawnLocalPlayer(randomize=false){
+ let angle,radius;
+ if(randomize){angle=Math.random()*Math.PI*2;radius=10+Math.random()*32;}
+ else{let hash=0;for(const c of String(cloudUid||playerName))hash=(hash*31+c.charCodeAt(0))>>>0;angle=(hash%360)*Math.PI/180;radius=5+(hash%5);}
  px=Math.cos(angle)*radius;pz=Math.sin(angle)*radius;
  feet=groundTopAt(px,pz,20);vy=0;grounded=true;
  player.position.set(px,feet+PLAYER_HEIGHT/2,pz);
@@ -1698,6 +1715,7 @@ function battleResetWeapons(round){
  battleAddWave(round,0);battleCurrentWave=0;
 }
 function battleEnterRound(state,initial=false){
+ if(battleRespawnTimer){clearTimeout(battleRespawnTimer);battleRespawnTimer=null;}
  const next=Math.max(1,Number(state.round)||1);
  const previous=battleActiveRound;
  battleRound=next;battleActiveRound=next;battleState=state;battleMode=true;
@@ -1796,6 +1814,8 @@ function battleAttack(){
 }
 function handleBattleRemotePlayerUpdate(uid,state,previous){
  if(!battleMode||netMode!=="cloud"||!state)return;
+ // 生存に戻った通知で、そのプレイヤーを次の死亡でも再びキル計上できるようにする。
+ if(state.battleAlive!==false&&previous&&previous.battleAlive===false)battleCreditedDeaths.delete(uid);
  if(state.battleAlive===false&&state.battleLastHitBy===cloudUid&&Number(state.battleRound)===battleRound&&!battleCreditedDeaths.has(uid)){
   battleCreditedDeaths.add(uid);battleKills++;battleUpdateHud();publishCloudPlayerState(performance.now(),true);
  }
@@ -1808,9 +1828,26 @@ function handleBattleRemotePlayerUpdate(uid,state,previous){
  const distance=Math.hypot(Number(state.x)-px,Number(state.z)-pz);
  if(!Number.isFinite(distance)||distance>spec.range+2)return;
  battleHp=Math.max(0,battleHp-spec.damage);battleLastHitBy=uid;
- if(battleHp<=0){battleAlive=false;statusLabel.textContent=`${cleanPlayerName(state.name)}に撃破された！次のラウンドを待とう。`;}
- else statusLabel.textContent=`攻撃を受けた！HP ${battleHp}`;
- battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+ if(battleHp<=0){
+  // 死亡状態をクラウドに送って相手のキル判定を発生させ、短い待ち時間のあと自動復活する。
+  battleAlive=false;battleKills=0;
+  statusLabel.textContent=`${cleanPlayerName(state.name)}に倒された！リスポーン中…`;
+  battleInventoryWeapons=["fists",null,null,null];battleSelectedWeaponSlot=0;battleWeapon="fists";battleRenderWeaponHotbar();
+  battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+  if(battleRespawnTimer)clearTimeout(battleRespawnTimer);
+  const diedInRound=battleRound;
+  battleRespawnTimer=setTimeout(()=>{
+   battleRespawnTimer=null;
+   if(!battleMode||netMode!=="cloud"||battleRound!==diedInRound||battleAlive)return;
+   battleHp=100;battleKills=0;battleAlive=true;battleLastHitBy="";
+   battleSpawnLocalPlayer(true);
+   battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+   statusLabel.textContent="リスポーンしたよ！もう一度戦おう！";
+  },550);
+ }else{
+  statusLabel.textContent=`攻撃を受けた！HP ${battleHp}`;
+  battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+ }
 }
 function battleTick(now){
  if(!battleMode||netMode!=="cloud")return;
