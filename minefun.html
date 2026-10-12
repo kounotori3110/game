@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MY BLOCK WORLD - テクスチャ追加完成版</title>
+<title>MY BLOCK WORLD - バトロワ</title>
 <style>
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87ceeb;font-family:Arial,sans-serif}
 canvas{display:block}
@@ -43,6 +44,12 @@ canvas{display:block}
 #networkHud{position:fixed;right:12px;top:12px;z-index:4;display:none;align-items:center;gap:8px;max-width:min(480px,55vw);padding:9px 11px;background:#000b;color:white;border-radius:10px;font-size:12px;pointer-events:auto}
 #networkHud #roomDisplay{display:inline-block;max-width:230px;overflow-wrap:anywhere;font-weight:bold;color:#ffe58a}
 #copyRoom{font-size:12px;padding:5px 8px;border:0;border-radius:5px;cursor:pointer}
+#battleHud{position:fixed;top:68px;right:12px;z-index:4;display:none;width:min(255px,54vw);box-sizing:border-box;padding:10px 12px;background:#101820dd;border:1px solid #ffffff70;border-radius:10px;color:#fff;font-size:13px;line-height:1.65;pointer-events:none;box-shadow:0 4px 16px #0005}
+#battleHud .bh-title{font-size:15px;font-weight:bold;color:#ffdf65}
+#battleHud .bh-time{font-size:22px;font-weight:bold;font-variant-numeric:tabular-nums}
+#battleHud .bh-row{display:flex;justify-content:space-between;gap:8px}
+#battleHud .bh-danger{color:#ff8c8c;font-weight:bold}
+#battleHud #brWinnerLabel{font-size:11px;color:#ffe58a;margin-top:4px}
 </style>
 </head>
 <body>
@@ -52,12 +59,12 @@ canvas{display:block}
 選択中：<span id="selectedName">草ブロック</span><br>
 <span id="status">準備完了</span><br>保存：<span id="saveStatus">自動保存を準備中</span><br>通信：<span id="networkStatus">オフライン</span>
 </div>
-<div id="networkHud"><span>部屋コード：</span><b id="roomDisplay">-</b><button id="copyRoom" type="button">コピー</button></div>
+<div id="networkHud"><span>ワールドコード：</span><b id="roomDisplay">-</b><button id="copyRoom" type="button">コピー</button></div>
 
 <div id="help">
-WASD：移動 / Space：ジャンプ / 一人称視点<br>
-左クリック：狙ったブロックを壊す<br>
-右クリック：選択ブロックを置く<br>
+WASD：移動 / Space：ジャンプ<br>
+左クリック：敵を攻撃 / Shift＋左クリック：ブロック破壊<br>
+右クリック：ブロック設置 / 武器に近づくと拾う<br>
 E：ブロック一覧 / 1〜9、0：選択
 </div>
 
@@ -82,20 +89,91 @@ E：ブロック一覧 / 1〜9、0：選択
   <div>いっしょにブロックの世界を作ろう！</div>
   <label for="playerNameInput">プレイヤー名（ニックネームがおすすめ）</label>
   <input id="playerNameInput" type="text" maxlength="20" placeholder="例：ブロック好き" autocomplete="nickname">
-  <button id="startBtn" class="primary" type="button">ひとりで遊ぶ</button>
-  <div style="border-top:1px solid #ffffff35;margin:17px 0 10px"></div>
-  <button id="hostBtn" class="primary" type="button">マルチの部屋を作る</button>
-  <label for="roomCodeInput">友達の部屋コード</label>
-  <input id="roomCodeInput" type="text" maxlength="100" placeholder="部屋を作った人からコードを教えてもらう">
-  <button id="joinBtn" class="secondary" type="button">コードで部屋に参加</button>
-  <div id="connectionMsg">マルチプレイにはインターネット接続が必要だよ。</div>
-  <div class="note">部屋を作った人がゲームを開いている間、その人のブラウザがワールドのホストになるよ。部屋コードを知っている人は参加できるので、信頼できる友達にだけ共有してね。ニックネームを使い、本名や個人情報は入力しないでね。</div>
-  <p class="note">操作：WASDで移動、Spaceでジャンプ、左クリックで破壊、右クリックで設置、Eでブロック一覧。</p>
+  <button id="startBtn" class="primary" type="button">🌐 固定サーバーでバトロワに参加</button>
+   <div class="note" style="margin-top:9px">固定サーバー：BR01<br>新しいサーバーや部屋は作れないよ。参加者は同じワールドで、5分ごとのラウンドを自動で遊ぶよ。</div>
+   <div style="display:none" aria-hidden="true">
+    <button id="hostBtn" class="primary" type="button">固定サーバー</button>
+    <label for="roomCodeInput">サーバー</label>
+    <input id="roomCodeInput" type="text" maxlength="32" value="BR01">
+    <button id="joinBtn" class="secondary" type="button">参加</button>
+   </div>
+   <div id="connectionMsg">接続すると、現在のラウンドに参加するよ。</div>
+  <details id="firebaseSetup" style="margin-top:12px;text-align:left;background:#0004;border-radius:9px;padding:10px">
+   <summary style="cursor:pointer;font-weight:bold">☁ 初回だけ：クラウド接続設定</summary>
+   <div class="note">この公開版にはMY BLOCK WORLD用のFirebase Web設定が組み込み済みだよ。通常の参加者は設定を入力しなくてOK！開発者が別のFirebaseプロジェクトへ切り替える場合だけ、ここを書き換えて「接続設定を保存」を押してね。秘密鍵やサービスアカウントのJSONは絶対に貼らないでね。</div>
+   <label for="firebaseConfigInput">Firebase Web設定（JSONまたは firebaseConfig のオブジェクト）</label>
+   <textarea id="firebaseConfigInput" rows="7" spellcheck="false" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "databaseURL": "https://...firebasedatabase.app",
+  "projectId": "...",
+  "appId": "..."
+}' style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;font:12px/1.45 monospace"></textarea>
+   <button id="saveFirebaseConfigBtn" type="button" style="margin-top:7px;padding:8px 10px;border:0;border-radius:6px;font-weight:bold;cursor:pointer">接続設定を保存</button>
+   <div class="note">Firebase側で「Authentication → Sign-in method → Anonymous」を有効にし、「Realtime Database」を作って、下のルールを設定する必要があるよ。</div>
+   <label for="firebaseRulesText">Realtime Database のルール（コピーしてFirebaseに貼り付け）</label>
+   <textarea id="firebaseRulesText" readonly rows="26" style="box-sizing:border-box;width:100%;padding:8px;border-radius:6px;font:11px/1.35 monospace">{
+  "rules": {
+    "rooms": {
+      "$roomId": {
+        "info": {
+          ".read": "auth != null",
+          ".write": "auth != null && (!data.exists() || data.child('owner').val() == auth.uid)"
+        },
+        "cells": {
+          ".read": "auth != null",
+          "$cellKey": {
+            ".write": "auth != null",
+            ".validate": "newData.hasChildren(['action','baseRemoved']) && newData.child('baseRemoved').isBoolean() && (newData.child('action').val() == 'remove' || (newData.child('action').val() == 'place' && newData.child('typeIndex').isNumber()))"
+          }
+        },
+        "customBlocks": {
+          ".read": "auth != null",
+          ".write": "auth != null",
+          "0": { ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()" },
+          "1": { ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()" },
+          "2": { ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()" },
+          "3": { ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()" },
+          "4": { ".validate": "newData.hasChildren(['name','dataUrl']) && newData.child('name').isString() && newData.child('dataUrl').isString()" },
+          "$other": { ".validate": false }
+        },
+        "players": {
+          ".read": "auth != null",
+          "$uid": { ".write": "auth != null && auth.uid == $uid" }
+        },
+        "battle": {
+          ".read": "auth != null",
+          "state": {
+            ".read": "auth != null",
+            ".write": "auth != null",
+            ".validate": "newData.hasChildren(['round','startAt']) && newData.child('round').isNumber() && newData.child('startAt').isNumber()"
+          },
+          "pickups": {
+            "$round": {
+              ".read": "auth != null",
+              "$spawnId": {
+                ".write": "auth != null && !data.exists() && newData.child('uid').val() == auth.uid",
+                ".validate": "newData.hasChildren(['uid','weapon','pickedAt']) && newData.child('uid').val() == auth.uid && newData.child('weapon').isString() && newData.child('pickedAt').isNumber()"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}</textarea>
+   <button id="copyFirebaseRulesBtn" type="button" style="margin-top:7px;padding:7px 9px;border:0;border-radius:6px;cursor:pointer">ルールをコピー</button>
+   <div class="note">ルールを公開設定（誰でも読み書き可能）にするのは避けてね。全員が同じFirebase Web設定を使えば参加できるよ。バトロワ版では battle と pickups のルールも必要。画面に表示された最新版のルールをFirebaseに貼り直して公開してね。</div>
+  </details>
+  <p class="note">このゲームは固定クラウドサーバー BR01 を使うよ。地形の見た目は残し、5分ごとにラウンドの変更ブロック・武器・HP・キル数をリセットするよ。ニックネームを使い、本名や個人情報は入力しないでね。</p>
+  <p class="note">バトロワ：武器はワールド内にランダム出現。拾って敵を狙い、5分終了時の最多キルが優勝！そのまま次のラウンドが始まるよ。</p>
  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-database-compat.js"></script>
 <script>
 (() => {
 const scene=new THREE.Scene();
@@ -415,7 +493,10 @@ makeCustomButton.addEventListener("click",async()=>{
  makeCustomButton.disabled=false;
  makeCustomButton.textContent="選んだ画像をまとめてEの一覧に追加";
  statusLabel.textContent=added?`${added}個のオリジナルブロックをEの一覧に追加したよ！`:"画像を読み込めなかったよ。別の画像を試してね";
- if(added)saveWorld();
+ if(added){
+  saveWorld();
+  if(netMode==="cloud")syncCloudCustomBlocks();
+ }
 });
 
 // プレイヤー
@@ -705,6 +786,9 @@ function enterGame(){
  if(netMode==="offline"){
   networkStatus.textContent="オフライン";
   statusLabel.textContent=`${playerName}としてプレイ中`;
+ }else if(netMode==="cloud"){
+  networkStatus.textContent="クラウド同期中";
+  statusLabel.textContent=`${playerName}：クラウドワールドに参加中！`;
  }else if(netMode==="host"){
   networkStatus.textContent="部屋を作成中";
   statusLabel.textContent=`${playerName}：部屋を作ったよ。コードを友達に教えてね！`;
@@ -722,6 +806,10 @@ function broadcastHost(message,exceptPeerId=null){
 }
 function publishBlockChange(change){
  if(netMode==="offline")return;
+ if(netMode==="cloud"){
+  publishCloudBlockChange(change);
+  return;
+ }
  const message={type:"block-change",change};
  if(netMode==="host")broadcastHost(message);
  else if(hostConnection&&hostConnection.open){
@@ -800,15 +888,29 @@ function resetToNetworkSnapshot(snapshot){
  saveStatus.textContent="共有ワールドを保存済み";
 }
 function replaceNetworkCustomBlocks(customBlocks){
- // 自分のローカル画像ではなく、ホストの画像セット・順番に揃える。
+ // 同じ内容が再通知されたときは、使用中のマテリアルを捨てない。
+ const incoming=(customBlocks||[]).slice(0,5).filter(saved=>saved&&typeof saved.name==="string"&&typeof saved.dataUrl==="string"&&saved.dataUrl.startsWith("data:image/"));
+ const existing=blockTypes.slice(BUILTIN_BLOCK_COUNT);
+ const unchanged=existing.length===incoming.length&&incoming.every((saved,i)=>existing[i]&&existing[i].name===saved.name.slice(0,24)&&existing[i].dataUrl===saved.dataUrl);
+ if(unchanged)return;
+ // 同じ画像が先頭から続くときは、既存テクスチャと設置済みブロックを保ち、新しい分だけ追加する。
+ const samePrefix=incoming.length>=existing.length&&existing.every((b,i)=>b&&incoming[i].name.slice(0,24)===b.name&&incoming[i].dataUrl===b.dataUrl);
+ if(samePrefix){
+  for(const saved of incoming.slice(existing.length)){
+   const texture=loadPixelTexture(saved.dataUrl);
+   const material=new THREE.MeshStandardMaterial({map:texture,color:0xffffff,roughness:.9});
+   blockTypes.push({name:saved.name.slice(0,24),color:0xffffff,material,texture,previewUrl:saved.dataUrl,dataUrl:saved.dataUrl,custom:true});
+  }
+  buildInventory();chooseSlot(selected);return;
+ }
+ // カタログ全体が別物の場合のみ入れ替える。
  for(const b of blockTypes.slice(BUILTIN_BLOCK_COUNT)){
   const mats=Array.isArray(b.material)?b.material:[b.material];
   mats.forEach(m=>{if(m&&m.dispose)m.dispose();});
   if(b.texture&&b.texture.dispose)b.texture.dispose();
  }
  blockTypes.splice(BUILTIN_BLOCK_COUNT);
- for(const saved of (customBlocks||[]).slice(0,5)){
-  if(!saved||typeof saved.name!=="string"||typeof saved.dataUrl!=="string"||!saved.dataUrl.startsWith("data:image/"))continue;
+ for(const saved of incoming){
   const texture=loadPixelTexture(saved.dataUrl);
   const material=new THREE.MeshStandardMaterial({map:texture,color:0xffffff,roughness:.9});
   blockTypes.push({name:saved.name.slice(0,24),color:0xffffff,material,texture,previewUrl:saved.dataUrl,dataUrl:saved.dataUrl,custom:true});
@@ -947,7 +1049,12 @@ function sendClientState(){
  try{hostConnection.send({type:"player-state",state:getLocalNetworkState()});}catch(err){console.warn(err);}
 }
 function networkTick(now){
- if(netMode==="offline"||now-lastNetworkTick<100)return;
+ if(netMode==="offline")return;
+ if(netMode==="cloud"){
+  publishCloudPlayerState(now);
+  return;
+ }
+ if(now-lastNetworkTick<100)return;
  lastNetworkTick=now;
  const state=getLocalNetworkState();
  if(netMode==="host"){
@@ -1005,21 +1112,659 @@ function joinMultiplayerRoom(){
  });
 }
 
-document.getElementById("startBtn").addEventListener("click",()=>{
+// -------------------- Firebaseクラウドマルチプレイ --------------------
+// Webアプリ設定は各ユーザーのブラウザに保存する。APIキー等のWeb設定だけを使用し、
+// サービスアカウント鍵・秘密鍵はHTMLに入れないこと。
+const FIREBASE_CONFIG_KEY="MY_BLOCK_WORLD_FIREBASE_WEB_CONFIG_V1";
+const firebaseConfigInput=document.getElementById("firebaseConfigInput");
+const saveFirebaseConfigButton=document.getElementById("saveFirebaseConfigBtn");
+const copyFirebaseRulesButton=document.getElementById("copyFirebaseRulesBtn");
+const firebaseRulesText=document.getElementById("firebaseRulesText");
+let cloudDb=null,cloudAuth=null,cloudUid=null,cloudRoomRef=null,cloudCellsRef=null,cloudPlayersRef=null;
+let cloudReady=false,cloudLastPlayerWrite=0;
+const cloudQueuedCellEvents=new Map();
+let cloudCellHandler=null,cloudPlayerAddedHandler=null,cloudPlayerChangedHandler=null,cloudPlayerRemovedHandler=null,cloudCustomBlocksHandler=null;
+// バトロワは固定サーバーで5分ごとに自動ラウンド更新。
+const BATTLE_SERVER_CODE="BR01", BATTLE_ROUND_MS=5*60*1000, BATTLE_WAVE_MS=20*1000;
+let battleStateRef=null,battlePickupRef=null,battleStateHandler=null,battlePickupHandler=null;
+let battleState=null,battleRound=1,battleActiveRound=0,battleMode=false;
+let battleHp=100,battleKills=0,battleAlive=true,battleWeapon="fists",battleLastHitBy="";
+let battleAttackSeq=0,battleAttackTargetUid="",battleAttackWeapon="fists",battleAttackRound=0,battleAttackAt=0;
+let battleLastAttackAt=0,battleLastRoundAttempt=0,battleLastHudUpdate=0,battleLastPickupCheck=0;
+let battlePickupClaims={},battleSpawnList=[],battlePickupMeshes=new Map(),battlePickupPending=new Set(),battleCreditedDeaths=new Set(),battleCurrentWave=-1;
+const battleHud=document.getElementById("battleHud");
+const battleRoundLabel=document.getElementById("brRoundLabel");
+const battleTimerLabel=document.getElementById("brTimerLabel");
+const battleHpLabel=document.getElementById("brHpLabel");
+const battleKillsLabel=document.getElementById("brKillsLabel");
+const battleWeaponLabel=document.getElementById("brWeaponLabel");
+const battleTopLabel=document.getElementById("brTopLabel");
+const battleWinnerLabel=document.getElementById("brWinnerLabel");
+const BATTLE_WEAPONS={
+ fists:{name:"パンチ",damage:16,range:2.6,cooldown:600,color:0xd7d7d7},
+ pixelSword:{name:"ピクセルソード",damage:38,range:3.5,cooldown:620,color:0x46e0b5},
+ blaster:{name:"ブロックブラスター",damage:23,range:24,cooldown:500,color:0x39c7ff},
+ sparkBow:{name:"スパークボウ",damage:31,range:34,cooldown:950,color:0xffce45}
+};
+
+// MY BLOCK WORLD 公開版のFirebase Web設定。Web設定なので秘密鍵ではない。
+// アクセス制御は必ず Firebase Realtime Database のセキュリティルールで行う。
+const DEFAULT_FIREBASE_CONFIG={
+ apiKey:"AIzaSyDpP2yicQBpBaw9H7irG41p5QusKDo_Lls",
+ authDomain:"minefun3110.firebaseapp.com",
+ databaseURL:"https://minefun3110-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId:"minefun3110",
+ storageBucket:"minefun3110.firebasestorage.app",
+ messagingSenderId:"1006486721446",
+ appId:"1:1006486721446:web:d1ca3aa986949466443567",
+ measurementId:"G-SKM366F1XF"
+};
+try{
+ const savedConfig=localStorage.getItem(FIREBASE_CONFIG_KEY);
+ // 利用者が以前から保存している設定があれば尊重し、初回は公開版の設定を使う。
+ firebaseConfigInput.value=JSON.stringify(savedConfig?JSON.parse(savedConfig):DEFAULT_FIREBASE_CONFIG,null,2);
+}catch(_){firebaseConfigInput.value=JSON.stringify(DEFAULT_FIREBASE_CONFIG,null,2);}
+
+function parseFirebaseConfigText(){
+ let raw=String(firebaseConfigInput.value||"").trim();
+ if(!raw)throw new Error("先にFirebase Web設定を貼り付けてね。下の『初回だけ：クラウド接続設定』を開いてね。");
+ raw=raw.replace(/^```(?:json|javascript|js)?\s*/i,"").replace(/\s*```$/,"" );
+ raw=raw.replace(/^\s*(?:const|let|var)\s+firebaseConfig\s*=\s*/m,"").replace(/;\s*$/m,"");
+ raw=raw.replace(/^\s*\/\/.*$/gm,"");
+ const start=raw.indexOf("{");const end=raw.lastIndexOf("}");
+ if(start<0||end<=start)throw new Error("Firebase設定の { ... } 部分を貼り付けてね。");
+ raw=raw.slice(start,end+1);
+ // Firebase Console のJSオブジェクト形式（キーに引用符がない形）も受け付ける。
+ raw=raw.replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g,'$1"$2":').replace(/,\s*}/g,"}");
+ let config;
+ try{config=JSON.parse(raw);}catch(_){throw new Error("設定を読み取れなかったよ。FirebaseのWebアプリ設定オブジェクトをそのまま貼ってね。");}
+ if(!config.apiKey||!config.projectId||!config.appId||!config.databaseURL){
+  throw new Error("設定に apiKey・projectId・appId・databaseURL が必要だよ。Realtime DatabaseのURLも入れてね。");
+ }
+ return config;
+}
+function saveFirebaseConfigFromForm(){
+ try{
+  const config=parseFirebaseConfigText();
+  localStorage.setItem(FIREBASE_CONFIG_KEY,JSON.stringify(config));
+  showConnectionMessage("Firebaseの接続設定をこのブラウザに保存したよ！");
+ }catch(err){
+  showConnectionMessage(err.message||"設定を保存できなかったよ。");
+  document.getElementById("firebaseSetup").open=true;
+ }
+}
+async function connectFirebaseCloud(){
+ if(!window.firebase||!firebase.initializeApp||!firebase.database||!firebase.auth){
+  throw new Error("Firebaseの読み込みに失敗したよ。インターネット接続を確認してページを再読み込みしてね。");
+ }
+ let config;
+ const typed=String(firebaseConfigInput.value||"").trim();
+ const saved=localStorage.getItem(FIREBASE_CONFIG_KEY);
+ if(typed){
+  config=parseFirebaseConfigText();
+  localStorage.setItem(FIREBASE_CONFIG_KEY,JSON.stringify(config));
+ }else if(saved){
+  try{config=JSON.parse(saved);}catch(_){}
+ }
+ if(!config)throw new Error("FirebaseのWeb設定が必要だよ。接続設定を貼り付けて保存してね。");
+ if(firebase.apps.length===0)firebase.initializeApp(config);
+ else if(firebase.app().options.projectId!==config.projectId){
+  throw new Error("別のFirebase設定です。このページを再読み込みして、同じプロジェクトの設定を使ってね。");
+ }
+ cloudAuth=firebase.auth();
+ if(!cloudAuth.currentUser)await cloudAuth.signInAnonymously();
+ cloudUid=cloudAuth.currentUser.uid;
+ cloudDb=firebase.database();
+}
+function randomCloudRoomCode(){
+ const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+ const bytes=new Uint8Array(12);
+ if(window.crypto&&crypto.getRandomValues)crypto.getRandomValues(bytes);
+ else for(let i=0;i<bytes.length;i++)bytes[i]=Math.floor(Math.random()*256);
+ return Array.from(bytes,b=>chars[b%chars.length]).join("");
+}
+function cloudKeyForCell(x,y,z){return `${x}_${y}_${z}`;}
+function parseCloudCellKey(key){
+ const m=/^(-?\d+)_(-?\d+)_(-?\d+)$/.exec(String(key||""));
+ if(!m)return null;
+ const coords=m.slice(1).map(Number);
+ if(!coords.every(Number.isInteger)||!inWorld(coords[0],coords[2])||coords[1]<0||coords[1]>100)return null;
+ return coords;
+}
+function getCloudCustomBlocks(){
+ return blockTypes.slice(BUILTIN_BLOCK_COUNT)
+  .filter(b=>b.custom&&typeof b.dataUrl==="string"&&b.dataUrl.startsWith("data:image/"))
+  .slice(0,5).map(b=>({name:String(b.name||"オリジナル").slice(0,24),dataUrl:b.dataUrl}));
+}
+function buildCurrentCloudCellMap(){
+ const cells={};
+ for(const key of removedTerrain){
+  const coords=key.split(",").map(Number);
+  if(coords.length===3)cells[cloudKeyForCell(...coords)]={action:"remove",baseRemoved:true,round:battleRound||1,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ }
+ for(const b of placedBlocks){
+  if(b.removed)continue;
+  const key=cloudKeyForCell(b.x,b.y,b.z);
+  cells[key]={action:"place",typeIndex:b.typeIndex,baseRemoved:removedTerrain.has(key3(b.x,b.y,b.z)),round:battleRound||1,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ }
+ return cells;
+}
+async function writeCloudCellMap(cellsRef,cells){
+ const entries=Object.entries(cells||{});
+ for(let start=0;start<entries.length;start+=100){
+  const patch={};
+  for(const [key,value] of entries.slice(start,start+100))patch[key]=value;
+  await cellsRef.update(patch);
+ }
+}
+function cloudSnapshotFromMap(map){
+ const removedTerrainSnapshot=[],placedSnapshot=[];
+ for(const [key,value] of Object.entries(map||{})){
+  const coords=parseCloudCellKey(key);
+  if(!coords||!value||typeof value!=="object")continue;
+  const cellRound=Number(value.round||1);
+  if(battleRound>0&&cellRound!==battleRound)continue;
+  if(value.baseRemoved===true)removedTerrainSnapshot.push(coords);
+  if(value.action==="place"){
+   const typeIndex=Number(value.typeIndex);
+   if(Number.isInteger(typeIndex)&&typeIndex>=0&&typeIndex<blockTypes.length)placedSnapshot.push([...coords,typeIndex]);
+  }
+ }
+ return {removedTerrain:removedTerrainSnapshot,placed:placedSnapshot};
+}
+function removeSolidForCloudEdit(x,y,z){
+ const key=key3(x,y,z),info=getSolid(x,y,z);
+ if(info){
+  info.removed=true;removeSolid(x,y,z);
+  if(info.kind==="terrain"){
+   removedTerrain.add(key);hideInstance(info.mesh,info.id);
+  }else placedGroup.remove(info.mesh);
+ }
+}
+function hideCloudBaseTerrain(x,y,z){
+ const key=key3(x,y,z),base=terrainCatalog.get(key);
+ if(base){
+  if(!base.removed){
+   base.removed=true;
+   if(getSolid(x,y,z)===base)removeSolid(x,y,z);
+   hideInstance(base.mesh,base.id);
+  }
+  removedTerrain.add(key);
+ }
+}
+function applyCloudCellEdit(key,value){
+ const coords=parseCloudCellKey(key);
+ if(!coords||!value||typeof value!=="object")return;
+ const [x,y,z]=coords,cellKey=key3(x,y,z);
+ // これは各座標の最新状態なので、同じ通知を複数回受け取っても結果は同じ。
+ if(value.baseRemoved===true)hideCloudBaseTerrain(x,y,z);
+ const current=getSolid(x,y,z);
+ // 旧バージョンの "break" も受け入れ、現行ルールの "remove" として扱う。
+ if(value.action==="remove"||value.action==="break"){
+  removeSolidForCloudEdit(x,y,z);
+  if(value.baseRemoved===true)hideCloudBaseTerrain(x,y,z);
+  saveWorld();
+  return;
+ }
+ if(value.action!=="place")return;
+ const typeIndex=Number(value.typeIndex);
+ if(!Number.isInteger(typeIndex)||typeIndex<0||typeIndex>=blockTypes.length){cloudQueuedCellEvents.set(key,value);return;}
+ if(current){
+  if(current.kind==="terrain")hideCloudBaseTerrain(x,y,z);
+  removeSolidForCloudEdit(x,y,z);
+ }
+ if(value.baseRemoved===true)hideCloudBaseTerrain(x,y,z);
+ // 同じ場所の前の配置を取り除いてから最新のブロックに置き換える。
+ const again=getSolid(x,y,z);
+ if(again)removeSolidForCloudEdit(x,y,z);
+ const type=blockTypes[typeIndex],mesh=new THREE.Mesh(cube,type.material);
+ mesh.position.set(x,y+.5,z);
+ const info={x,y,z,removed:false,kind:"placed",mesh,typeIndex};
+ mesh.userData.blockInfo=info;placedBlocks.push(info);addSolid(x,y,z,info);placedGroup.add(mesh);
+ saveWorld();
+}
+function publishCloudBlockChange(change){
+ if(!cloudCellsRef||!cloudUid||!change)return;
+ const key=cloudKeyForCell(change.x,change.y,change.z);
+ const baseRemoved=removedTerrain.has(key3(change.x,change.y,change.z));
+ // ローカル処理は "break"、Realtime Databaseのルールは "remove" を使うため変換する。
+ const cloudAction=change.action==="break"?"remove":change.action;
+ const value={action:cloudAction,baseRemoved,round:battleRound||1,by:cloudUid,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ if(change.action==="place")value.typeIndex=Number(change.typeIndex);
+ cloudCellsRef.child(key).set(value).catch(err=>{
+  console.warn("クラウドへのブロック保存に失敗",err);
+  saveStatus.textContent="クラウド保存エラー";
+  statusLabel.textContent="クラウドに保存できなかったよ。Realtime Databaseのルールを確認してね。";
+ });
+}
+function syncCloudCustomBlocks(){
+ if(!cloudRoomRef||!cloudUid)return;
+ const custom=getCloudCustomBlocks();
+ cloudRoomRef.child("customBlocks").set(custom).catch(err=>{
+  console.warn("カスタム画像のクラウド同期に失敗",err);
+  statusLabel.textContent="オリジナル画像の共有に失敗したよ。画像サイズやDatabaseのルールを確認してね。";
+ });
+}
+function handleCloudCellSnapshot(snap){
+ if(!snap||!snap.exists())return;
+ const value=snap.val();
+ if(!cloudReady){cloudQueuedCellEvents.set(snap.key,value);return;}
+ applyCloudCellEdit(snap.key,value);
+}
+function handleCloudPlayerSnapshot(snap){
+ if(!snap||!snap.key)return;
+ if(snap.key===cloudUid)return;
+ const state=snap.val();
+ if(!state){removeRemotePlayer(snap.key);return;}
+ const previous=networkPlayerStates.get(snap.key)||null;
+ upsertRemotePlayer(snap.key,state);
+ handleBattleRemotePlayerUpdate(snap.key,state,previous);
+}
+function publishCloudPlayerState(now,force=false){
+ if(!cloudPlayersRef||!cloudUid||(!force&&now-cloudLastPlayerWrite<250))return;
+ cloudLastPlayerWrite=now;
+ const state={name:playerName,x:px,y:feet,z:pz,yaw,
+  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleLastHitBy,
+  battleAttackSeq,battleAttackTargetUid,battleAttackWeapon,battleAttackRound,battleAttackAt,
+  updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ cloudPlayersRef.child(cloudUid).set(state).catch(err=>{
+  console.warn("プレイヤー位置を同期できませんでした",err);
+  networkStatus.textContent="クラウド通信エラー";
+ });
+}
+async function openCloudRoom(code,firstWorld){
+ cloudRoomCode=code;roomCode=code;cloudRoomRef=cloudDb.ref(`rooms/${code}`);
+ cloudCellsRef=cloudRoomRef.child("cells");cloudPlayersRef=cloudRoomRef.child("players");
+ battleStateRef=cloudRoomRef.child("battle/state");
+ // 初回だけ共有ラウンド状態を作成。以後は全員が同じ時刻・ラウンドを読む。
+ const stateTx=await battleStateRef.transaction(current=>current?undefined:{round:1,startAt:Date.now(),lastWinner:null},undefined,false);
+ battleState=stateTx.snapshot.val()||{round:1,startAt:Date.now(),lastWinner:null};
+ battleRound=Math.max(1,Number(battleState.round)||1);
+ cloudReady=false;cloudQueuedCellEvents.clear();
+ cloudCellHandler=snap=>handleCloudCellSnapshot(snap);
+ cloudCellsRef.on("child_added",cloudCellHandler);
+ cloudCellsRef.on("child_changed",cloudCellHandler);
+ if(firstWorld){
+  // 初回作成時は現在のローカルワールドをクラウドへ移す。
+  const custom=getCloudCustomBlocks();
+  await cloudRoomRef.child("customBlocks").set(custom);
+  await writeCloudCellMap(cloudCellsRef,buildCurrentCloudCellMap());
+ }
+ const [customSnap,cellsSnap]=await Promise.all([
+  cloudRoomRef.child("customBlocks").once("value"),cloudCellsRef.once("value")
+ ]);
+ const customBlocks=customSnap.val();
+ replaceNetworkCustomBlocks(Array.isArray(customBlocks)?customBlocks:[]);
+ resetToNetworkSnapshot(cloudSnapshotFromMap(cellsSnap.val()||{}));
+ cloudReady=true;
+ // 初期読込中に届いた変更を最新値として反映。作成直後の自分の変更も同じ処理。
+ for(const [key,value] of cloudQueuedCellEvents)applyCloudCellEdit(key,value);
+ cloudQueuedCellEvents.clear();
+ cloudCustomBlocksHandler=snap=>{
+  if(!snap||!snap.exists())return;
+  const data=snap.val();
+  if(Array.isArray(data))replaceNetworkCustomBlocks(data);
+  for(const [key,value] of Array.from(cloudQueuedCellEvents)){
+   if(value&&value.action==="place"&&Number(value.typeIndex)>=blockTypes.length)continue;
+   cloudQueuedCellEvents.delete(key);applyCloudCellEdit(key,value);
+  }
+ };
+ cloudRoomRef.child("customBlocks").on("value",cloudCustomBlocksHandler);
+ cloudPlayerAddedHandler=handleCloudPlayerSnapshot;
+ cloudPlayerChangedHandler=handleCloudPlayerSnapshot;
+ cloudPlayerRemovedHandler=snap=>{if(snap&&snap.key&&snap.key!==cloudUid)removeRemotePlayer(snap.key);};
+ cloudPlayersRef.on("child_added",cloudPlayerAddedHandler);
+ cloudPlayersRef.on("child_changed",cloudPlayerChangedHandler);
+ cloudPlayersRef.on("child_removed",cloudPlayerRemovedHandler);
+ await cloudPlayersRef.child(cloudUid).onDisconnect().remove();
+ await cloudPlayersRef.child(cloudUid).set({name:playerName,x:px,y:feet,z:pz,yaw,
+  battleRound,battleHp,battleAlive,battleKills,battleWeapon,battleLastHitBy,
+  battleAttackSeq,battleAttackTargetUid,battleAttackWeapon,battleAttackRound,battleAttackAt,
+  updatedAt:firebase.database.ServerValue.TIMESTAMP});
+ netMode="cloud";showRoomHud();enterGame();
+ setupBattleRoyale();
+ networkStatus.textContent="クラウド同期中";
+ saveStatus.textContent="クラウド保存ON";
+ statusLabel.textContent=firstWorld?"クラウドワールドを作ったよ！コードを友達に教えてね。":"クラウドワールドを読み込んだよ！変更は自動で共有・保存されるよ。";
+}
+function setCloudButtonsDisabled(disabled){setButtonsDisabled(disabled);saveFirebaseConfigButton.disabled=disabled;}
+async function joinPublicBattleServer(){
  playerName=cleanPlayerName(playerNameInput.value);playerNameInput.value=playerName;
- netMode="offline";roomCode="";
- enterGame();showRoomHud();renderer.domElement.requestPointerLock?.();
+ setCloudButtonsDisabled(true);showConnectionMessage("固定サーバー BR01 に接続中…");
+ try{
+  await connectFirebaseCloud();
+  const code=BATTLE_SERVER_CODE;
+  const infoRef=cloudDb.ref(`rooms/${code}/info`);
+  const infoTx=await infoRef.transaction(current=>current?undefined:{owner:cloudUid,createdAt:Date.now(),title:"MY BLOCK WORLD BATTLE ROYALE",version:2},undefined,false);
+  const firstWorld=!!infoTx.committed;
+  if(!infoTx.snapshot.exists())throw new Error("固定サーバー情報を作れなかったよ。Realtime Databaseのルールを確認してね。");
+  await openCloudRoom(code,firstWorld);
+  showConnectionMessage("固定サーバー BR01 に参加したよ！5分ラウンドが自動で進むよ。");
+ }catch(err){
+  console.error("固定バトロワサーバーに接続できませんでした",err);
+  netMode="offline";showRoomHud();
+  showConnectionMessage(`接続できなかったよ：${err.message||err.code||"Firebaseの設定・ルールを確認してね"}`);
+  document.getElementById("firebaseSetup").open=true;
+ }finally{setCloudButtonsDisabled(false);}
+}
+
+async function createFirebaseCloudRoom(){
+ playerName=cleanPlayerName(playerNameInput.value);playerNameInput.value=playerName;
+ setCloudButtonsDisabled(true);showConnectionMessage("Firebaseに接続中…");
+ try{
+  await connectFirebaseCloud();
+  let newCode="",infoRef=null;
+  for(let tries=0;tries<8;tries++){
+   newCode=randomCloudRoomCode();
+   infoRef=cloudDb.ref(`rooms/${newCode}/info`);
+   const existing=await infoRef.once("value");
+   if(!existing.exists())break;
+   newCode="";
+  }
+  if(!newCode||!infoRef)throw new Error("ワールドコードを作れなかったよ。もう一度押してね。");
+  await infoRef.set({owner:cloudUid,createdAt:firebase.database.ServerValue.TIMESTAMP,title:"MY BLOCK WORLD",version:1});
+  netMode="cloud";
+  await openCloudRoom(newCode,true);
+  showConnectionMessage("クラウドワールドを作成したよ！コードを友達に教えてね。");
+ }catch(err){
+  console.error("クラウドワールドを作れませんでした",err);
+  netMode="offline";showRoomHud();
+  showConnectionMessage(`接続できなかったよ：${err.message||err.code||"設定を確認してね"}`);
+  document.getElementById("firebaseSetup").open=true;
+ }finally{setCloudButtonsDisabled(false);}
+}
+async function joinFirebaseCloudRoom(){
+ playerName=cleanPlayerName(playerNameInput.value);playerNameInput.value=playerName;
+ const code=String(roomCodeInput.value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+ if(!code){showConnectionMessage("ワールドを作った人からコードを教えてもらってね。");return;}
+ setCloudButtonsDisabled(true);showConnectionMessage("クラウドワールドを探しているよ…");
+ try{
+  await connectFirebaseCloud();
+  const infoSnap=await cloudDb.ref(`rooms/${code}/info`).once("value");
+  if(!infoSnap.exists())throw new Error("ワールドが見つからないよ。コードとFirebase設定を確認してね。");
+  netMode="cloud";
+  await openCloudRoom(code,false);
+  showConnectionMessage("ワールドに参加したよ！ブロックの変更はみんなに共有されるよ。");
+ }catch(err){
+  console.error("クラウドワールドに参加できませんでした",err);
+  netMode="offline";roomCode="";showRoomHud();
+  showConnectionMessage(`参加できなかったよ：${err.message||err.code||"設定を確認してね"}`);
+  document.getElementById("firebaseSetup").open=true;
+ }finally{setCloudButtonsDisabled(false);}
+}
+// -------------------- 5分ラウンドのバトロワ --------------------
+const battleWeaponGroup=new THREE.Group();scene.add(battleWeaponGroup);
+const battleCombatRaycaster=new THREE.Raycaster();
+const battleOcclusionRaycaster=new THREE.Raycaster();
+function battleSeedRandom(seed){
+ let a=seed>>>0;
+ return function(){a=(a+0x6D2B79F5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};
+}
+function battleSpawnItemsForWave(round,wave){
+ const rand=battleSeedRandom((round*7919+wave*104729+20261012)>>>0);
+ const count=wave===0?3:2, items=[];
+ const types=["pixelSword","blaster","sparkBow"];
+ for(let i=0;i<count;i++){
+  const angle=rand()*Math.PI*2, radius=14+rand()*42;
+  const x=Math.max(-HALF+4,Math.min(HALF-4,Math.round(Math.cos(angle)*radius)));
+  const z=Math.max(-HALF+4,Math.min(HALF-4,Math.round(Math.sin(angle)*radius)));
+  items.push({id:`w${wave}_${i}`,weapon:types[Math.floor(rand()*types.length)],x,z,y:terrainHeight(x,z)});
+ }
+ return items;
+}
+function battleMakePickupMesh(item){
+ const group=new THREE.Group(), weapon=BATTLE_WEAPONS[item.weapon];
+ const mainMat=new THREE.MeshStandardMaterial({color:weapon.color,emissive:weapon.color,emissiveIntensity:.25,roughness:.35,metalness:.12});
+ const darkMat=new THREE.MeshStandardMaterial({color:0x3a4651,roughness:.7});
+ const goldMat=new THREE.MeshStandardMaterial({color:0xffd34e,emissive:0x775500,emissiveIntensity:.2});
+ // 小さな浮遊するドット絵武器。リアルな銃ではなくゲーム用の抽象デザイン。
+ const base=new THREE.Mesh(new THREE.BoxGeometry(.42,.42,.42),mainMat);base.position.y=.15;group.add(base);
+ if(item.weapon==="pixelSword"){
+  const blade=new THREE.Mesh(new THREE.BoxGeometry(.16,.92,.18),mainMat);blade.position.set(0,.74,0);blade.rotation.z=-.15;group.add(blade);
+  const guard=new THREE.Mesh(new THREE.BoxGeometry(.52,.12,.18),goldMat);guard.position.set(0,.35,0);group.add(guard);
+  const grip=new THREE.Mesh(new THREE.BoxGeometry(.13,.38,.14),darkMat);grip.position.set(0,.1,0);group.add(grip);
+ }else if(item.weapon==="blaster"){
+  const body=new THREE.Mesh(new THREE.BoxGeometry(.62,.25,.32),darkMat);body.position.set(0,.48,0);group.add(body);
+  const barrel=new THREE.Mesh(new THREE.BoxGeometry(.18,.18,.66),mainMat);barrel.position.set(0,.52,-.38);group.add(barrel);
+  const sight=new THREE.Mesh(new THREE.BoxGeometry(.14,.12,.14),goldMat);sight.position.set(0,.68,-.06);group.add(sight);
+ }else{
+  const limb1=new THREE.Mesh(new THREE.BoxGeometry(.12,.85,.12),mainMat);limb1.position.set(-.2,.62,0);limb1.rotation.z=-.35;group.add(limb1);
+  const limb2=new THREE.Mesh(new THREE.BoxGeometry(.12,.85,.12),mainMat);limb2.position.set(.2,.62,0);limb2.rotation.z=.35;group.add(limb2);
+  const string=new THREE.Mesh(new THREE.BoxGeometry(.035,.8,.035),goldMat);string.position.set(0,.62,0);group.add(string);
+ }
+ group.position.set(item.x,item.y+.48,item.z);
+ group.userData.baseY=item.y+.48;group.userData.seed=item.x*13+item.z*7;
+ return group;
+}
+function battleSyncPickupMeshes(){
+ const needed=new Set(battleSpawnList.map(item=>item.id));
+ for(const [id,group] of Array.from(battlePickupMeshes)){
+  if(!needed.has(id)||battlePickupClaims[id]){battleWeaponGroup.remove(group);group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});battlePickupMeshes.delete(id);}
+ }
+ for(const item of battleSpawnList){
+  if(battlePickupClaims[item.id]||battlePickupMeshes.has(item.id))continue;
+  const group=battleMakePickupMesh(item);group.userData.spawnId=item.id;group.userData.weapon=item.weapon;
+  battleWeaponGroup.add(group);battlePickupMeshes.set(item.id,group);
+ }
+}
+function battleAttachPickupListener(round){
+ if(battlePickupRef&&battlePickupHandler){battlePickupRef.off("value",battlePickupHandler);}
+ battlePickupRef=cloudRoomRef.child(`battle/pickups/${round}`);
+ battlePickupHandler=snap=>{
+  battlePickupClaims=snap&&snap.exists()?(snap.val()||{}):{};
+  battleSyncPickupMeshes();
+ };
+ battlePickupRef.on("value",battlePickupHandler);
+}
+function battleAddWave(round,wave){
+ const existing=new Set(battleSpawnList.map(x=>x.id));
+ for(const item of battleSpawnItemsForWave(round,wave))if(!existing.has(item.id))battleSpawnList.push(item);
+ battleSyncPickupMeshes();
+}
+function battleFormatTime(ms){
+ const seconds=Math.max(0,Math.ceil(ms/1000));
+ return `${String(Math.floor(seconds/60)).padStart(2,"0")}:${String(seconds%60).padStart(2,"0")}`;
+}
+function battleStandings(){
+ const records=[];
+ if(cloudUid)records.push({uid:cloudUid,name:playerName,kills:battleKills,alive:battleAlive,round:battleRound});
+ for(const [uid,state] of networkPlayerStates){
+  if(uid===cloudUid||!state||Number(state.battleRound)!==battleRound)continue;
+  records.push({uid,name:cleanPlayerName(state.name),kills:Math.max(0,Number(state.battleKills)||0),alive:state.battleAlive!==false,round:Number(state.battleRound)});
+ }
+ records.sort((a,b)=>b.kills-a.kills||a.name.localeCompare(b.name));
+ return records;
+}
+function battleGetWinner(){
+ const standings=battleStandings();
+ if(!standings.length)return {uid:"",name:"まだ参加者なし",kills:0};
+ const max=standings[0].kills;
+ const ties=standings.filter(p=>p.kills===max);
+ return ties.length>1?{uid:"",name:"同率優勝（"+ties.map(p=>p.name).join("・")+"）",kills:max}:standings[0];
+}
+function battleUpdateHud(now=Date.now()){
+ if(!battleHud)return;
+ battleHud.style.display=battleMode&&netMode==="cloud"?"block":"none";
+ battleRoundLabel.textContent=String(battleRound||1);
+ const start=Number(battleState&&battleState.startAt)||now;
+ const remain=Math.max(0,BATTLE_ROUND_MS-(now-start));
+ battleTimerLabel.textContent=battleFormatTime(remain);
+ battleHpLabel.textContent=`${battleHp} / 100`;
+ battleHpLabel.classList.toggle("bh-danger",battleHp<=30);
+ battleKillsLabel.textContent=String(battleKills);
+ battleWeaponLabel.textContent=(BATTLE_WEAPONS[battleWeapon]||BATTLE_WEAPONS.fists).name;
+ const standings=battleStandings().slice(0,3);
+ battleTopLabel.textContent=standings.length?"TOP："+standings.map((p,i)=>`${i+1}.${p.name} ${p.kills}K`).join("　"):"参加者を待っているよ";
+ if(battleState&&battleState.lastWinner){
+  const w=battleState.lastWinner;
+  battleWinnerLabel.textContent=`前回優勝：${w.name||"プレイヤー"}（${Number(w.kills)||0}キル）`;
+ }else battleWinnerLabel.textContent="武器を拾ってキルを稼ごう！";
+}
+function battleSpawnLocalPlayer(){
+ let hash=0;for(const c of String(cloudUid||playerName))hash=(hash*31+c.charCodeAt(0))>>>0;
+ const angle=(hash%360)*Math.PI/180,radius=5+(hash%5);
+ px=Math.cos(angle)*radius;pz=Math.sin(angle)*radius;
+ feet=groundTopAt(px,pz,20);vy=0;grounded=true;
+ player.position.set(px,feet+PLAYER_HEIGHT/2,pz);
+ updateCamera();
+}
+function battleResetWeapons(round){
+ battleSpawnList=[];battleCurrentWave=-1;battlePickupClaims={};battlePickupPending.clear();
+ for(const [id,group] of Array.from(battlePickupMeshes)){
+  battleWeaponGroup.remove(group);group.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)o.material.dispose();});
+ }
+ battlePickupMeshes.clear();
+ battleAttachPickupListener(round);
+ battleAddWave(round,0);battleCurrentWave=0;
+}
+function battleEnterRound(state,initial=false){
+ const next=Math.max(1,Number(state.round)||1);
+ const previous=battleActiveRound;
+ battleRound=next;battleActiveRound=next;battleState=state;battleMode=true;
+ if(!initial&&previous!==0){
+  // ラウンドの区切りで、設置物と破壊履歴だけを初期地形へ戻す。
+  resetToNetworkSnapshot({removedTerrain:[],placed:[]});
+  statusLabel.textContent="ラウンドが終了！ワールドをリセットして次の対戦を開始するよ。";
+ }
+ battleHp=100;battleKills=0;battleAlive=true;battleWeapon="fists";battleLastHitBy="";
+ battleAttackSeq=0;battleAttackTargetUid="";battleAttackWeapon="fists";battleAttackRound=next;battleAttackAt=0;
+ battleCreditedDeaths.clear();battleSpawnLocalPlayer();battleResetWeapons(next);
+ if(state.lastWinner&& !initial){const w=state.lastWinner;statusLabel.textContent=`${w.name||"プレイヤー"}が${Number(w.kills)||0}キルで優勝！次のラウンド開始！`;}
+ else if(initial)statusLabel.textContent=`バトロワ第${next}ラウンドに参加したよ！`;
+ battleUpdateHud();
+ publishCloudPlayerState(performance.now(),true);
+}
+function setupBattleRoyale(){
+ if(!cloudRoomRef||!cloudUid)return;
+ battleMode=true;
+ if(battleStateHandler&&battleStateRef)battleStateRef.off("value",battleStateHandler);
+ battleStateRef=cloudRoomRef.child("battle/state");
+ battleStateHandler=snap=>{
+  if(!snap||!snap.exists())return;
+  const state=snap.val();
+  if(!state||!Number.isFinite(Number(state.round))||!Number.isFinite(Number(state.startAt)))return;
+  battleState=state;
+  const next=Number(state.round);
+  if(battleActiveRound!==next)battleEnterRound(state,battleActiveRound===0);
+  else battleUpdateHud();
+ };
+ battleStateRef.on("value",battleStateHandler);
+}
+async function battleTryAdvanceRound(now){
+ if(!battleStateRef||!battleState||now-battleLastRoundAttempt<1000)return;
+ const start=Number(battleState.startAt)||now;
+ if(now-start<BATTLE_ROUND_MS)return;
+ battleLastRoundAttempt=now;
+ const expectedRound=Number(battleState.round)||battleRound;
+ const winner=battleGetWinner();
+ try{
+  await battleStateRef.transaction(current=>{
+   if(!current)return {round:1,startAt:Date.now(),lastWinner:null};
+   const curRound=Number(current.round)||1,curStart=Number(current.startAt)||Date.now();
+   if(curRound!==expectedRound||Date.now()-curStart<BATTLE_ROUND_MS)return;
+   return {round:curRound+1,startAt:Date.now(),lastWinner:{uid:winner.uid||"",name:winner.name,kills:Number(winner.kills)||0}};
+  },undefined,false);
+ }catch(err){console.warn("ラウンドの更新に失敗",err);}
+}
+function battleTryPickup(now){
+ if(!battleMode||netMode!=="cloud"||!cloudUid||!battleAlive||!battlePickupRef||now-battleLastPickupCheck<180)return;
+ battleLastPickupCheck=now;
+ for(const item of battleSpawnList){
+  if(battlePickupClaims[item.id]||battlePickupPending.has(item.id))continue;
+  if(Math.hypot(px-item.x,pz-item.z)>1.45||Math.abs(feet-item.y)>2.2)continue;
+  battlePickupPending.add(item.id);
+  const pickRef=battlePickupRef.child(item.id);
+  pickRef.transaction(current=>current===null?{uid:cloudUid,weapon:item.weapon,pickedAt:Date.now()}:undefined,undefined,false)
+   .then(result=>{
+    if(result.committed&&battleActiveRound===battleRound){
+     battleWeapon=item.weapon;
+     statusLabel.textContent=`${BATTLE_WEAPONS[item.weapon].name}を拾った！左クリックで攻撃！`;
+     battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+    }
+   }).catch(err=>{console.warn("武器を拾えませんでした",err);})
+   .finally(()=>battlePickupPending.delete(item.id));
+ }
+}
+function battleFindTarget(){
+ const weapon=BATTLE_WEAPONS[battleWeapon]||BATTLE_WEAPONS.fists;
+ battleCombatRaycaster.setFromCamera(center,camera);battleCombatRaycaster.far=weapon.range;
+ const targetMeshes=[];
+ for(const [uid,av] of remoteAvatars){
+  const state=networkPlayerStates.get(uid);
+  if(!av||!av.group.visible||state?.battleAlive===false||Number(state?.battleRound)!==battleRound)continue;
+  av.group.traverse(o=>{if(o.isMesh){o.userData.battleTargetUid=uid;targetMeshes.push(o);}});
+ }
+ const hits=battleCombatRaycaster.intersectObjects(targetMeshes,false);
+ if(!hits.length)return null;
+ const nearest=hits[0];
+ // 地形や建築ブロックが敵より手前なら、その敵には当たらない。
+ battleOcclusionRaycaster.setFromCamera(center,camera);battleOcclusionRaycaster.far=Math.max(0,nearest.distance-.12);
+ const blocks=[grassMesh,dirtMesh,...placedBlocks.filter(b=>!b.removed).map(b=>b.mesh)];
+ const blockers=battleOcclusionRaycaster.intersectObjects(blocks,false);
+ if(blockers.length)return null;
+ return {uid:nearest.object.userData.battleTargetUid,distance:nearest.distance,weapon};
+}
+function battleAttack(){
+ if(netMode!=="cloud"||!battleMode||!cloudUid){statusLabel.textContent="バトロワサーバーに接続してね";return;}
+ if(!battleAlive){statusLabel.textContent="このラウンドでは撃破されたよ。次のラウンドを待とう！";return;}
+ const now=Date.now(),weapon=BATTLE_WEAPONS[battleWeapon]||BATTLE_WEAPONS.fists;
+ if(now-battleLastAttackAt<weapon.cooldown)return;
+ const target=battleFindTarget();
+ if(!target){statusLabel.textContent=battleWeapon==="fists"?"敵を狙うか、Shift＋左クリックでブロックを壊せるよ":"敵が照準にいないよ";return;}
+ battleLastAttackAt=now;battleAttackSeq++;
+ battleAttackTargetUid=target.uid;battleAttackWeapon=battleWeapon;battleAttackRound=battleRound;battleAttackAt=now;
+ statusLabel.textContent=`${networkPlayerStates.get(target.uid)?.name||"敵"}を攻撃！`;
+ publishCloudPlayerState(performance.now(),true);
+}
+function handleBattleRemotePlayerUpdate(uid,state,previous){
+ if(!battleMode||netMode!=="cloud"||!state)return;
+ if(state.battleAlive===false&&state.battleLastHitBy===cloudUid&&Number(state.battleRound)===battleRound&&!battleCreditedDeaths.has(uid)){
+  battleCreditedDeaths.add(uid);battleKills++;battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+ }
+ const seq=Number(state.battleAttackSeq)||0,prevSeq=Number(previous&&previous.battleAttackSeq)||0;
+ if(!previous||seq<=prevSeq||uid===cloudUid)return;
+ if(state.battleAttackTargetUid!==cloudUid||Number(state.battleAttackRound)!==battleRound)return;
+ if(Date.now()-Number(state.battleAttackAt)>2200)return;
+ if(!battleAlive||Number(state.battleRound)!==battleRound)return;
+ const spec=BATTLE_WEAPONS[state.battleAttackWeapon]||BATTLE_WEAPONS.fists;
+ const distance=Math.hypot(Number(state.x)-px,Number(state.z)-pz);
+ if(!Number.isFinite(distance)||distance>spec.range+2)return;
+ battleHp=Math.max(0,battleHp-spec.damage);battleLastHitBy=uid;
+ if(battleHp<=0){battleAlive=false;statusLabel.textContent=`${cleanPlayerName(state.name)}に撃破された！次のラウンドを待とう。`;}
+ else statusLabel.textContent=`攻撃を受けた！HP ${battleHp}`;
+ battleUpdateHud();publishCloudPlayerState(performance.now(),true);
+}
+function battleTick(now){
+ if(!battleMode||netMode!=="cloud")return;
+ const time=Date.now();
+ if(battleActiveRound>0){
+  const elapsed=Math.max(0,time-(Number(battleState&&battleState.startAt)||time));
+  const wave=Math.min(14,Math.floor(elapsed/BATTLE_WAVE_MS));
+  if(wave>battleCurrentWave){for(let w=battleCurrentWave+1;w<=wave;w++)battleAddWave(battleRound,w);battleCurrentWave=wave;}
+  for(const [id,group] of battlePickupMeshes){group.rotation.y+=Math.min(.08,Math.max(.008,.02));group.position.y=group.userData.baseY+Math.sin(time/240+group.userData.seed)*.13;}
+  battleTryPickup(time);
+  battleTryAdvanceRound(time);
+  if(time-battleLastHudUpdate>250){battleLastHudUpdate=time;battleUpdateHud(time);}
+ }
+}
+
+saveFirebaseConfigButton.addEventListener("click",saveFirebaseConfigFromForm);
+copyFirebaseRulesButton.addEventListener("click",async()=>{
+ try{await navigator.clipboard.writeText(firebaseRulesText.value);showConnectionMessage("Realtime Databaseのルールをコピーしたよ！");}
+ catch(_){firebaseRulesText.focus();firebaseRulesText.select();showConnectionMessage("選択したルールをコピーしてね。");}
 });
-document.getElementById("hostBtn").addEventListener("click",createMultiplayerRoom);
-document.getElementById("joinBtn").addEventListener("click",joinMultiplayerRoom);
+
+document.getElementById("startBtn").addEventListener("click",joinPublicBattleServer);
+document.getElementById("hostBtn").addEventListener("click",joinPublicBattleServer);
+document.getElementById("joinBtn").addEventListener("click",joinPublicBattleServer);
 document.getElementById("copyRoom").addEventListener("click",async()=>{
  if(!roomCode){return;}
  try{await navigator.clipboard.writeText(roomCode);statusLabel.textContent="部屋コードをコピーしたよ！";}
  catch(_){statusLabel.textContent="右上の部屋コードを選択してコピーしてね";}
 });
 window.addEventListener("beforeunload",()=>{if(netPeer){try{netPeer.destroy();}catch(_){}}});
-roomCodeInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinMultiplayerRoom();});
 playerNameInput.addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("startBtn").click();});
+roomCodeInput.addEventListener("keydown",e=>{if(e.key==="Enter")joinFirebaseCloudRoom();});
 
 document.addEventListener("contextmenu",e=>e.preventDefault());
 
@@ -1031,11 +1776,15 @@ document.addEventListener("mousedown",e=>{
   return;
  }
 
- if(e.button===0)breakBlock();
+ if(e.button===0){
+  if(battleMode&&netMode==="cloud"&&!e.shiftKey)battleAttack();
+  else breakBlock();
+ }
  if(e.button===2)placeBlock();
 });
 
 function updatePlayer(dt){
+ if(battleMode&&netMode==="cloud"&&!battleAlive){player.position.set(px,feet+PLAYER_HEIGHT/2,pz);return;}
  let forward=0,side=0;
  if(keys.KeyW||keys.ArrowUp)forward++;
  if(keys.KeyS||keys.ArrowDown)forward--;
@@ -1164,6 +1913,7 @@ function animate(now){
  updatePlayer(dt);
  updateCamera();
  networkTick(now);
+ battleTick(now);
  renderer.render(scene,camera);
 }
 requestAnimationFrame(animate);
