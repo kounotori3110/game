@@ -64,8 +64,8 @@ canvas{display:block}
 
 <div id="help">
 WASD：移動 / Space長押し：連続ジャンプ / Shift：しゃがみ・落下防止<br>
-左クリック：ブロック破壊・スライム攻撃<br>
-右クリック長押し：連続でブロックを置く / F：宝箱を開ける<br>
+左クリック長押し：連続採掘・スライム攻撃<br>
+右クリック長押し：連続でブロックを置く<br>
 E：ブロック一覧 / 1〜9、0：選択
 </div>
 <div id="adventureHud">
@@ -73,10 +73,9 @@ E：ブロック一覧 / 1〜9、0：選択
  <div>体力：<b id="advHealthText">100 / 100</b></div>
  <div class="advHealthTrack"><div id="advHealthBar"></div></div>
  <div>スライム討伐：<b id="advMobsText">0</b></div>
- <div>宝箱発見：<b id="advChestsText">0</b></div>
  <div>クリスタル：<b id="advCrystalsText">0</b></div>
- <div class="advGoal" id="advGoal">自由に探索しよう！スライムや宝箱、クリスタルを探そう！</div>
- <div class="advDirection" id="advDirection">Fキー：近くの宝箱を開ける</div>
+ <div class="advGoal" id="advGoal">自由に探索しよう！森や地下洞窟を探検して、素材を集めよう。</div>
+ <div class="advDirection" id="advDirection">近くのスライムやクリスタルを探してみよう。</div>
 </div>
 <div id="crosshair">+</div>
 <div id="hotbar"></div>
@@ -96,7 +95,7 @@ E：ブロック一覧 / 1〜9、0：選択
 <div id="start">
  <div class="panel">
   <h1>MY BLOCK WORLD</h1>
-  <div>探索して、スライムを倒し、宝箱やクリスタルを探そう！クリア条件のない自由な世界だよ。</div>
+  <div>探索して素材を集め、スライムと戦おう！クリア条件のない自由な世界だよ。</div>
   <label for="playerNameInput">プレイヤー名（ニックネームがおすすめ）</label>
   <input id="playerNameInput" type="text" maxlength="20" placeholder="例：ブロック好き" autocomplete="nickname">
   <button id="startBtn" class="primary" type="button">ひとりで遊ぶ</button>
@@ -174,13 +173,7 @@ E：ブロック一覧 / 1〜9、0：選択
               ".validate": "newData.hasChildren(['by','at']) && newData.child('by').isString()"
             }
           },
-          "chestsOpened": {
-            "$chestId": {
-              ".write": "auth != null",
-              ".validate": "newData.hasChildren(['by','at']) && newData.child('by').isString()"
-            }
-          },
-          "crystalsCollected": {
+                  "crystalsCollected": {
             "$crystalId": {
               ".write": "auth != null",
               ".validate": "newData.hasChildren(['by','at']) && newData.child('by').isString()"
@@ -192,7 +185,7 @@ E：ブロック一覧 / 1〜9、0：選択
   }
 }</textarea>
    <button id="copyFirebaseRulesBtn" type="button" style="margin-top:7px;padding:7px 9px;border:0;border-radius:6px;cursor:pointer">ルールをコピー</button>
-   <div class="note">ルールを公開設定（誰でも読み書き可能）にするのは避けてね。全員が同じFirebase Web設定を使えば参加できるよ。冒険進行も同期するには、下の rules に追加した adventure 用ルールも公開してね。初回設定後はHTTPSのページ（例：GitHub Pages）で開くのがおすすめ。</div>
+   <div class="note">ルールを公開設定（誰でも読み書き可能）にするのは避けてね。全員が同じFirebase Web設定を使えば参加できるよ。冒険進行も同期するには、下の rules にある adventure 用ルールも公開してね。初回設定後はHTTPSのページ（例：GitHub Pages）で開くのがおすすめ。</div>
   </details>
   <p class="note">クラウド方式なので、部屋を作った人がゲームを閉じてもワールドの変更はクラウドに残るよ。部屋コードを知っている人が参加できるので、信頼できる友達にだけ共有してね。ニックネームを使い、本名や個人情報は入力しないでね。</p>
   <p class="note">操作：WASDで移動、Spaceでジャンプ、左クリック長押しで採掘（約0.5秒）、右クリックで設置、Eでブロック一覧。</p>
@@ -698,7 +691,6 @@ function generateForestBlocks(){
  for(let x=20;x<=65;x+=5)for(let z=15;z<=65;z+=5){
   if(forestHash(x,z)<.34)continue;
   if(Math.hypot(x,z)<18)continue;
-  if(Math.hypot(x-56,z-53)<6)continue; // 古代遺跡のまわりは少し開けておく
   candidates.push([x,z]);
  }
  const usedTrees=new Set();
@@ -944,28 +936,34 @@ function drawCracks(stage){
  crackTexture.needsUpdate=true;
 }
 function clearBreaking(){breakSession=null;crackOverlay.visible=false;crackStage=-1;drawCracks(-1);}
-function beginBlockBreaking(){
+let nextMiningAcquireAt=0;
+function beginBlockBreaking(autoContinue=false){
  const hit=getTarget();
- if(!hit){statusLabel.textContent="十字をブロックやスライムに合わせてね";return;}
+ if(!hit){if(!autoContinue)statusLabel.textContent="十字をブロックに合わせてね";return;}
  const mobId=hit.object&&hit.object.userData&&hit.object.userData.adventureMobId;
- if(mobId){performBreak(hit);return;}
+ if(mobId){if(!autoContinue)performBreak(hit);return;}
  const info=infoFromHit(hit);if(!info||info.removed)return;
- if(info.kind==="stoneTerrain"&&info.y===MIN_Y){statusLabel.textContent="一番下の岩盤は壊せないよ";return;}
+ if(info.kind==="stoneTerrain"&&info.y===MIN_Y){if(!autoContinue)statusLabel.textContent="一番下の岩盤は壊せないよ";return;}
  breakSession={key:key3(info.x,info.y,info.z),started:performance.now(),x:info.x,y:info.y,z:info.z};
  crackOverlay.position.set(info.x,info.y+.5,info.z);crackOverlay.visible=true;drawCracks(0);crackStage=0;
 }
 function updateBreaking(now){
- if(!breakSession)return;
- if(!leftMouseHeld||document.pointerLockElement!==renderer.domElement||inventory.style.display==="block"){clearBreaking();return;}
- const hit=getTarget();if(!hit){clearBreaking();return;}
+ if(!leftMouseHeld||document.pointerLockElement!==renderer.domElement||inventory.style.display==="block"){
+  if(breakSession)clearBreaking();
+  return;
+ }
+ // 押しっぱなしなら、前のブロックを壊したあとも狙っている次のブロックを自動で採掘開始。
+ if(!breakSession){if(now>=nextMiningAcquireAt){nextMiningAcquireAt=now+65;beginBlockBreaking(true);}return;}
+ const hit=getTarget();
+ if(!hit){clearBreaking();nextMiningAcquireAt=now+65;return;}
  const mobId=hit.object&&hit.object.userData&&hit.object.userData.adventureMobId;
  const info=mobId?null:infoFromHit(hit);
- if(!info||key3(info.x,info.y,info.z)!==breakSession.key){clearBreaking();return;}
+ if(!info||key3(info.x,info.y,info.z)!==breakSession.key){clearBreaking();nextMiningAcquireAt=now+35;return;}
  const progress=Math.max(0,Math.min(1,(now-breakSession.started)/BREAK_DURATION));
  const stage=Math.min(CRACK_PATHS.length-1,Math.floor(progress*CRACK_PATHS.length));
  if(stage!==crackStage){drawCracks(stage);crackStage=stage;}
  crackOverlay.position.set(info.x,info.y+.5,info.z);
- if(progress>=1){clearBreaking();performBreak(hit);}
+ if(progress>=1){clearBreaking();performBreak(hit);nextMiningAcquireAt=now+25;}
 }
 
 // 左クリック後、採掘アニメーションが終わったブロックを壊す。
@@ -1004,22 +1002,19 @@ function performBreak(hitOverride=null){
 }
 
 // -------------------- 冒険モード --------------------
-// 固定スポーンのスライム・宝箱・クリスタルと、眺められる古代遺跡を用意する。
+// 固定スポーンのスライムとクリスタルを用意する。
 // ブロック世界は従来どおり保存され、冒険の進行状況は別キーで保存する。
 const ADVENTURE_SAVE_KEY="MY_BLOCK_WORLD_ADVENTURE_V1";
 const adventureHUD=document.getElementById("adventureHud");
 const advHealthText=document.getElementById("advHealthText");
 const advHealthBar=document.getElementById("advHealthBar");
 const advMobsText=document.getElementById("advMobsText");
-const advChestsText=document.getElementById("advChestsText");
 const advCrystalsText=document.getElementById("advCrystalsText");
 const advGoal=document.getElementById("advGoal");
 const advDirection=document.getElementById("advDirection");
 const adventureMobs=new Map();
-const adventureChests=new Map();
 const adventureCrystals=new Map();
 const defeatedAdventureMobs=new Set();
-const openedAdventureChests=new Set();
 const collectedAdventureCrystals=new Set();
 const adventureTreeColliders=[];
 const adventureScenery=new THREE.Group();
@@ -1038,12 +1033,7 @@ const treeLeafLightMat=new THREE.MeshStandardMaterial({color:0x419e45,roughness:
 const treeTrunkGeom=new THREE.BoxGeometry(.62,2.35,.62);
 const treeLeafGeom=new THREE.BoxGeometry(2.6,1.55,2.5);
 const treeTopGeom=new THREE.BoxGeometry(1.85,1.55,1.85);
-const ruinStoneMat=new THREE.MeshStandardMaterial({color:0x767f8e,roughness:.93});
-const ruinTrimMat=new THREE.MeshStandardMaterial({color:0xb7c4ca,roughness:.72});
 const crystalMat=new THREE.MeshStandardMaterial({color:0x58eaff,emissive:0x0a9fc2,emissiveIntensity:1.2,roughness:.22,metalness:.12});
-const chestWoodMat=new THREE.MeshStandardMaterial({color:0x8b5129,roughness:.88});
-const chestLidMat=new THREE.MeshStandardMaterial({color:0xb87936,roughness:.75});
-const chestMetalMat=new THREE.MeshStandardMaterial({color:0xf3ca54,metalness:.55,roughness:.4});
 let adventureWorldCreated=false;
 let adventureStarted=false;
 let adventureKills=0;
@@ -1060,9 +1050,6 @@ const ADVENTURE_MOB_SPAWNS=[
  {id:"slime-05",x:36,z:13},{id:"slime-06",x:-35,z:27},
  {id:"slime-07",x:22,z:39},{id:"slime-08",x:-44,z:-8}
 ];
-const ADVENTURE_CHEST_SPAWNS=[
- {id:"chest-01",x:15,z:11},{id:"chest-02",x:-29,z:17},{id:"chest-03",x:31,z:-29}
-];
 const ADVENTURE_CRYSTAL_SPAWNS=[
  {id:"crystal-01",x:5,z:9},{id:"crystal-02",x:22,z:4},
  {id:"crystal-03",x:-17,z:25},{id:"crystal-04",x:-31,z:1},
@@ -1073,33 +1060,6 @@ function adventureSurfaceY(x,z){
  const gx=Math.max(-HALF,Math.min(HALF-1,Math.round(x)));
  const gz=Math.max(-HALF,Math.min(HALF-1,Math.round(z)));
  return heights[index(gx,gz)];
-}
-function makeAdventureDecorationBox(geom,mat,x,y,z,group=adventureScenery){
- const mesh=new THREE.Mesh(geom,mat);mesh.position.set(x,y,z);group.add(mesh);return mesh;
-}
-function addAdventureTree(x,z,variant=0){
- // 森の木はワールド生成時に原木・葉っぱのブロックとして作成済み。
-}
-function addAncientRuins(){
- const x=56,z=53,y=adventureSurfaceY(x,z),g=new THREE.Group();g.position.set(x,y,z);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.85,3.2,.85),ruinStoneMat,-1.65,1.6,0,g);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.85,3.2,.85),ruinStoneMat,1.65,1.6,0,g);
- makeAdventureDecorationBox(new THREE.BoxGeometry(4.1,.65,.9),ruinStoneMat,0,3.35,0,g);
- makeAdventureDecorationBox(new THREE.BoxGeometry(3.65,.18,1.05),ruinTrimMat,0,3.03,0,g);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.95,.45,.95),ruinStoneMat,-2.0,.22,0,g);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.95,.45,.95),ruinStoneMat,2.0,.22,0,g);
- adventureScenery.add(g);
- // 洞窟入口的石拱和发光水晶，作为远处的探索地标。
- const cx=-42,cz=29,cy=adventureSurfaceY(cx,cz),cave=new THREE.Group();cave.position.set(cx,cy,cz);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.65,2.4,.65),ruinStoneMat,-1.15,1.2,0,cave);
- makeAdventureDecorationBox(new THREE.BoxGeometry(.65,2.4,.65),ruinStoneMat,1.15,1.2,0,cave);
- makeAdventureDecorationBox(new THREE.BoxGeometry(3.05,.55,.8),ruinStoneMat,0,2.45,0,cave);
- const mouth=new THREE.Mesh(new THREE.PlaneGeometry(1.85,1.9),new THREE.MeshBasicMaterial({color:0x080e18,side:THREE.DoubleSide}));mouth.position.set(0,1.05,-.12);cave.add(mouth);
- for(let i=0;i<4;i++){
-  const c=new THREE.Mesh(new THREE.OctahedronGeometry(.24+(i%2)*.08,0),crystalMat);
-  c.position.set(-.55+i*.36,.3+(i%2)*.25,.42);c.rotation.set(.25*i,.5*i,.18*i);cave.add(c);
- }
- adventureScenery.add(cave);
 }
 function createAdventureMob(spec){
  const g=new THREE.Group();
@@ -1112,15 +1072,6 @@ function createAdventureMob(spec){
  const y=adventureSurfaceY(spec.x,spec.z);g.position.set(spec.x,y,spec.z);scene.add(g);
  adventureMobs.set(spec.id,{...spec,group:g,body,hp:3,maxHp:3,dead:false,nextAttackAt:0,phase:Math.random()*6,hpFlash:0,y});
 }
-function createAdventureChest(spec){
- const g=new THREE.Group(),y=adventureSurfaceY(spec.x,spec.z);g.position.set(spec.x,y,spec.z);
- const base=new THREE.Mesh(new THREE.BoxGeometry(.9,.52,.7),chestWoodMat);base.position.y=.29;g.add(base);
- const lidPivot=new THREE.Group();lidPivot.position.set(0,.54,.02);g.add(lidPivot);
- const lid=new THREE.Mesh(new THREE.BoxGeometry(.94,.24,.74),chestLidMat);lid.position.set(0,.08,0);lidPivot.add(lid);
- const latch=new THREE.Mesh(new THREE.BoxGeometry(.14,.2,.06),chestMetalMat);latch.position.set(0,.01,-.39);g.add(latch);
- g.userData.chestId=spec.id;scene.add(g);
- adventureChests.set(spec.id,{...spec,group:g,lidPivot,opened:false});
-}
 function createAdventureCrystal(spec){
  const y=adventureSurfaceY(spec.x,spec.z),g=new THREE.Group();g.position.set(spec.x,y+.72,spec.z);
  const core=new THREE.Mesh(new THREE.OctahedronGeometry(.36,0),crystalMat);g.add(core);
@@ -1131,9 +1082,7 @@ function createAdventureWorld(){
  if(adventureWorldCreated)return;
  adventureWorldCreated=true;
  // 森はワールドの初期生成時にブロックとして作成済み。
- addAncientRuins();
  ADVENTURE_MOB_SPAWNS.forEach(createAdventureMob);
- ADVENTURE_CHEST_SPAWNS.forEach(createAdventureChest);
  ADVENTURE_CRYSTAL_SPAWNS.forEach(createAdventureCrystal);
 }
 function adventureStorageKey(){
@@ -1144,7 +1093,7 @@ function saveAdventureLocal(){
  try{
   localStorage.setItem(adventureStorageKey(),JSON.stringify({
    version:2,kills:adventureKills,crystals:adventureCrystalsCount,health:adventureHealth,
-   defeated:Array.from(defeatedAdventureMobs),opened:Array.from(openedAdventureChests),collected:Array.from(collectedAdventureCrystals)
+   defeated:Array.from(defeatedAdventureMobs),collected:Array.from(collectedAdventureCrystals)
   }));
  }catch(e){console.warn("冒険データの保存に失敗",e);}
 }
@@ -1157,21 +1106,18 @@ function loadLocalAdventureState(sharedOnly=false){
   adventureHealth=Math.max(1,Math.min(100,Number(d.health)||100));
   if(sharedOnly)return;
   for(const id of Array.isArray(d.defeated)?d.defeated:[])if(ADVENTURE_MOB_SPAWNS.some(m=>m.id===id))defeatedAdventureMobs.add(id);
-  for(const id of Array.isArray(d.opened)?d.opened:[])if(ADVENTURE_CHEST_SPAWNS.some(c=>c.id===id))openedAdventureChests.add(id);
   for(const id of Array.isArray(d.collected)?d.collected:[])if(ADVENTURE_CRYSTAL_SPAWNS.some(c=>c.id===id))collectedAdventureCrystals.add(id);
  }catch(e){console.warn("冒険データを読み込めませんでした",e);}
 }
 function applyAdventureVisualState(){
  for(const id of defeatedAdventureMobs){const m=adventureMobs.get(id);if(m&&!m.dead){m.dead=true;scene.remove(m.group);}}
- for(const id of openedAdventureChests){const c=adventureChests.get(id);if(c&&!c.opened){c.opened=true;c.lidPivot.rotation.x=-.9;}}
  for(const id of collectedAdventureCrystals){const c=adventureCrystals.get(id);if(c&&!c.collected){c.collected=true;scene.remove(c.group);}}
  updateAdventureHUD();
 }
-function makeAdventureSnapshot(){return {defeated:Array.from(defeatedAdventureMobs),opened:Array.from(openedAdventureChests),collected:Array.from(collectedAdventureCrystals)};}
+function makeAdventureSnapshot(){return {defeated:Array.from(defeatedAdventureMobs),collected:Array.from(collectedAdventureCrystals)};}
 function applyAdventureSnapshot(snapshot){
  if(!snapshot||typeof snapshot!=="object")return;
  for(const id of Array.isArray(snapshot.defeated)?snapshot.defeated:[])applyAdventureEvent({kind:"mobDefeated",id},false,false);
- for(const id of Array.isArray(snapshot.opened)?snapshot.opened:[])applyAdventureEvent({kind:"chestOpened",id},false,false);
  for(const id of Array.isArray(snapshot.collected)?snapshot.collected:[])applyAdventureEvent({kind:"crystalCollected",id},false,false);
  applyAdventureVisualState();
 }
@@ -1180,25 +1126,23 @@ function updateAdventureHUD(){
  advHealthBar.style.width=`${Math.max(0,adventureHealth)}%`;
  advHealthBar.style.background=adventureHealth<30?"linear-gradient(90deg,#ff453a,#ff9b57)":"linear-gradient(90deg,#32cf74,#a8f060)";
  advMobsText.textContent=String(defeatedAdventureMobs.size);
- advChestsText.textContent=String(openedAdventureChests.size);
  advCrystalsText.textContent=String(adventureCrystalsCount);
- advGoal.textContent="自由に探索しよう！スライム・宝箱・クリスタルを探してみよう。";
+ advGoal.textContent="自由に探索しよう！森や地下洞窟を探検して、素材を集めよう。";
  let target=null,label="";
  const consider=(x,z,kind)=>{const d=Math.hypot(px-x,pz-z);if(!target||d<target.d)target={x,z,d},label=kind;};
- for(const c of adventureChests.values())if(!openedAdventureChests.has(c.id))consider(c.x,c.z,"宝箱");
  for(const m of adventureMobs.values())if(!defeatedAdventureMobs.has(m.id))consider(m.x,m.z,"スライム");
  for(const c of adventureCrystals.values())if(!collectedAdventureCrystals.has(c.id))consider(c.x,c.z,"クリスタル");
  if(target){
   const dx=target.x-px,dz=target.z-pz;let dir="";
   if(Math.abs(dx)>2)dir+=dx>0?"東":"西";
   if(Math.abs(dz)>2)dir+=dz>0?"南":"北";
-  advDirection.textContent=`近くの発見候補：${label}（${dir||"すぐ近く"}・約${Math.round(target.d)}m） / F：宝箱を開ける`;
- }else advDirection.textContent="自由に探索中！またスライムや宝箱を探してみよう。";
+  advDirection.textContent=`近くの発見候補：${label}（${dir||"すぐ近く"}・約${Math.round(target.d)}m）`;
+ }else advDirection.textContent="自由に探索中！森や地下洞窟を探してみよう。";
 }
 function syncAdventureEvent(event){
  if(!event||!event.id)return;
  if(netMode==="cloud"&&cloudRoomRef&&cloudUid){
-  const path=event.kind==="mobDefeated"?"mobsDefeated":event.kind==="chestOpened"?"chestsOpened":"crystalsCollected";
+  const path=event.kind==="mobDefeated"?"mobsDefeated":"crystalsCollected";
   cloudRoomRef.child(`adventure/${path}/${event.id}`).set({by:cloudUid,at:firebase.database.ServerValue.TIMESTAMP}).catch(err=>{
    console.warn("冒険の同期に失敗",err);statusLabel.textContent="冒険の同期に失敗。FirebaseのRulesに冒険用ルールを追加してね。";
   });
@@ -1212,14 +1156,10 @@ function applyAdventureEvent(event,awardLocal=false,broadcast=false){
   if(!ADVENTURE_MOB_SPAWNS.some(m=>m.id===event.id)||defeatedAdventureMobs.has(event.id))return false;
   defeatedAdventureMobs.add(event.id);const mob=adventureMobs.get(event.id);if(mob){mob.dead=true;scene.remove(mob.group);}
   if(awardLocal){adventureKills++;adventureCrystalsCount++;statusLabel.textContent=`スライムを倒した！キル ${adventureKills}・結晶 +1`;}changed=true;
- }else if(event.kind==="chestOpened"){
-  if(!ADVENTURE_CHEST_SPAWNS.some(c=>c.id===event.id)||openedAdventureChests.has(event.id))return false;
-  openedAdventureChests.add(event.id);const chest=adventureChests.get(event.id);if(chest){chest.opened=true;chest.lidPivot.rotation.x=-.9;}
-  if(awardLocal){adventureCrystalsCount+=3;adventureHealth=Math.min(100,adventureHealth+35);statusLabel.textContent="宝箱を開けた！結晶 +3・体力回復";}changed=true;
  }else if(event.kind==="crystalCollected"){
   if(!ADVENTURE_CRYSTAL_SPAWNS.some(c=>c.id===event.id)||collectedAdventureCrystals.has(event.id))return false;
   collectedAdventureCrystals.add(event.id);const crystal=adventureCrystals.get(event.id);if(crystal){crystal.collected=true;scene.remove(crystal.group);}
-  if(awardLocal){adventureCrystalsCount++;adventureHealth=Math.min(100,adventureHealth+10);statusLabel.textContent="古代のクリスタルを拾った！体力も少し回復";}changed=true;
+  if(awardLocal){adventureCrystalsCount++;adventureHealth=Math.min(100,adventureHealth+10);statusLabel.textContent="クリスタルを拾った！体力も少し回復";}changed=true;
  }
  if(changed){saveAdventureLocal();updateAdventureHUD();if(broadcast)syncAdventureEvent(event);}
  return changed;
@@ -1228,13 +1168,11 @@ function subscribeCloudAdventure(){
  if(!cloudRoomRef)return;
  if(cloudAdventureSubs){for(const ref of cloudAdventureSubs)try{ref.off("value");}catch(_){}cloudAdventureSubs=null;}
  const mobRef=cloudRoomRef.child("adventure/mobsDefeated");
- const chestRef=cloudRoomRef.child("adventure/chestsOpened");
  const crystalRef=cloudRoomRef.child("adventure/crystalsCollected");
  const reportError=err=>{console.warn("冒険データを読めません",err);statusLabel.textContent="冒険データを読めないよ。Firebase Rulesを最新版にしてね。";};
  mobRef.on("value",snap=>{const d=snap.val()||{};for(const id of Object.keys(d))applyAdventureEvent({kind:"mobDefeated",id},false,false);},reportError);
- chestRef.on("value",snap=>{const d=snap.val()||{};for(const id of Object.keys(d))applyAdventureEvent({kind:"chestOpened",id},false,false);},reportError);
  crystalRef.on("value",snap=>{const d=snap.val()||{};for(const id of Object.keys(d))applyAdventureEvent({kind:"crystalCollected",id},false,false);},reportError);
- cloudAdventureSubs=[mobRef,chestRef,crystalRef];
+ cloudAdventureSubs=[mobRef,crystalRef];
 }
 function startAdventureSession(){
  if(adventureStarted)return;
@@ -1250,15 +1188,6 @@ function attackAdventureMob(id){
  mob.hp--;mob.hpFlash=.18;mob.body.material=slimeHitMat;
  statusLabel.textContent=`スライムに攻撃！ 残り体力 ${mob.hp}/${mob.maxHp}`;
  if(mob.hp<=0)applyAdventureEvent({kind:"mobDefeated",id,by:cloudUid||netPeer?.id||"local"},true,true);
-}
-function interactAdventure(){
- if(!adventureStarted)return;
- let best=null,bestD=3.1;
- for(const chest of adventureChests.values())if(!chest.opened&&!openedAdventureChests.has(chest.id)){
-  const d=Math.hypot(px-chest.x,pz-chest.z);if(d<bestD)best=chest,bestD=d;
- }
- if(best){applyAdventureEvent({kind:"chestOpened",id:best.id,by:cloudUid||netPeer?.id||"local"},true,true);return;}
- statusLabel.textContent="近くに宝箱がないよ。自由に探索して、スライムやクリスタルを探してみよう！";
 }
 function updateAdventureWorld(dt,now){
  if(!adventureStarted||startOverlay.style.display!=="none")return;
@@ -2162,9 +2091,6 @@ function updateCamera(){
 document.addEventListener("keydown",e=>{
  if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code))e.preventDefault();
 
- if(e.code==="KeyF"&&!e.repeat){
-  e.preventDefault();interactAdventure();return;
- }
  if(e.code==="KeyE"&&!e.repeat){
   const opening=inventory.style.display!=="block";
   inventory.style.display=opening?"block":"none";
