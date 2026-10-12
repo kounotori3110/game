@@ -15,7 +15,7 @@ canvas{display:block}
 .slot{width:clamp(25px,5.5vw,48px);height:clamp(32px,6vw,48px);position:relative;box-sizing:border-box;border:2px solid #777;background:#444c;display:flex;align-items:center;justify-content:center;color:white;font-size:10px;cursor:pointer}
 .slot.selected{border:3px solid #fff;background:#777e;transform:translateY(-3px)}
 .slot .swatch{width:65%;height:65%;border:1px solid #ffffff70;box-sizing:border-box}
-.slot .num{position:absolute;top:1px;left:3px;font-size:10px;text-shadow:0 1px 3px black}
+.slot .num{position:absolute;top:1px;left:3px;font-size:10px;text-shadow:0 1px 3px black}.slot .stack-count{position:absolute;right:1px;bottom:0;font-size:10px;font-weight:bold;color:#fff;background:#000b;border-radius:3px;padding:0 2px;text-shadow:0 1px 2px #000;pointer-events:none}.itemCount{margin-left:auto;white-space:nowrap;font-size:11px;font-weight:bold;color:#ffe58a;padding-left:4px}
 #start{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#0006;color:white;text-align:center}
 #start button{font-size:20px;padding:14px 24px;border:0;border-radius:12px;cursor:pointer}
 #inventory{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(430px,90vw);padding:15px;background:#222e;color:white;border:2px solid #aaa;border-radius:12px;z-index:5}
@@ -65,18 +65,18 @@ canvas{display:block}
 <div id="help">
 WASD：移動 / Space長押し：連続ジャンプ / Shift：しゃがみ・落下防止<br>
 左クリック：ブロック破壊・スライム攻撃<br>
-右クリック長押し：連続でブロックを置く / F：宝箱・門を調べる<br>
+右クリック長押し：連続でブロックを置く / F：宝箱を開ける<br>
 E：ブロック一覧 / 1〜9、0：選択
 </div>
 <div id="adventureHud">
  <div class="advTitle">🧭 MY BLOCK WORLD 冒険</div>
  <div>体力：<b id="advHealthText">100 / 100</b></div>
  <div class="advHealthTrack"><div id="advHealthBar"></div></div>
- <div>スライム討伐：<b id="advMobsText">0 / 5</b></div>
- <div>宝箱：<b id="advChestsText">0 / 3</b></div>
+ <div>スライム討伐：<b id="advMobsText">0</b></div>
+ <div>宝箱発見：<b id="advChestsText">0</b></div>
  <div>クリスタル：<b id="advCrystalsText">0</b></div>
- <div class="advGoal" id="advGoal">スライム5体と宝箱3つを探そう！</div>
- <div class="advDirection" id="advDirection">Fキー：近くの宝箱や門を調べる</div>
+ <div class="advGoal" id="advGoal">自由に探索しよう！スライムや宝箱、クリスタルを探そう！</div>
+ <div class="advDirection" id="advDirection">Fキー：近くの宝箱を開ける</div>
 </div>
 <div id="crosshair">+</div>
 <div id="hotbar"></div>
@@ -96,7 +96,7 @@ E：ブロック一覧 / 1〜9、0：選択
 <div id="start">
  <div class="panel">
   <h1>MY BLOCK WORLD</h1>
-  <div>探索して、スライムを倒し、お宝を見つけて古代の門を目指そう！</div>
+  <div>探索して、スライムを倒し、宝箱やクリスタルを探そう！クリア条件のない自由な世界だよ。</div>
   <label for="playerNameInput">プレイヤー名（ニックネームがおすすめ）</label>
   <input id="playerNameInput" type="text" maxlength="20" placeholder="例：ブロック好き" autocomplete="nickname">
   <button id="startBtn" class="primary" type="button">ひとりで遊ぶ</button>
@@ -195,7 +195,7 @@ E：ブロック一覧 / 1〜9、0：選択
    <div class="note">ルールを公開設定（誰でも読み書き可能）にするのは避けてね。全員が同じFirebase Web設定を使えば参加できるよ。冒険進行も同期するには、下の rules に追加した adventure 用ルールも公開してね。初回設定後はHTTPSのページ（例：GitHub Pages）で開くのがおすすめ。</div>
   </details>
   <p class="note">クラウド方式なので、部屋を作った人がゲームを閉じてもワールドの変更はクラウドに残るよ。部屋コードを知っている人が参加できるので、信頼できる友達にだけ共有してね。ニックネームを使い、本名や個人情報は入力しないでね。</p>
-  <p class="note">操作：WASDで移動、Spaceでジャンプ、左クリックで破壊、右クリックで設置、Eでブロック一覧。</p>
+  <p class="note">操作：WASDで移動、Spaceでジャンプ、左クリック長押しで採掘（約0.5秒）、右クリックで設置、Eでブロック一覧。</p>
  </div>
 </div>
 
@@ -222,7 +222,7 @@ const sun=new THREE.DirectionalLight(0xffffff,2);
 sun.position.set(-40,80,35);
 scene.add(sun);
 
-const WORLD=220,HALF=WORLD/2;
+const WORLD=220,HALF=WORLD/2,MIN_Y=-53,STONE_CHUNK_SIZE=16;
 const heights=new Int16Array(WORLD*WORLD);
 const index=(x,z)=>(z+HALF)*WORLD+(x+HALF);
 const inWorld=(x,z)=>x>=-HALF&&x<HALF&&z>=-HALF&&z<HALF;
@@ -232,12 +232,25 @@ const key3=(x,y,z)=>`${x},${y},${z}`;
 // 下のブロックを壊して上が浮いても、別々に管理する。
 const solid=new Map();
 const terrainCatalog=new Map();
+const removedTerrain=new Set();
+const stoneChunkMeshes=new Map();
+const treeBlocks=[];
+let treeLogMesh=null,treeLeafMesh=null,treeLogInfo=[],treeLeafInfo=[];
 function addSolid(x,y,z,record){
  solid.set(key3(x,y,z),record);
- if(record&&record.kind==="terrain")terrainCatalog.set(key3(x,y,z),record);
+ if(record&&(record.kind==="terrain"||record.kind==="tree"))terrainCatalog.set(key3(x,y,z),record);
 }
 function getSolid(x,y,z){
- return solid.get(key3(x,y,z));
+ const key=key3(x,y,z);
+ const explicit=solid.get(key);
+ if(explicit&&!explicit.removed)return explicit;
+ if(removedTerrain.has(key))return null;
+ const type=terrainBaseTypeAt(x,y,z);
+ if(type===2){
+  const cx=Math.floor((x+HALF)/STONE_CHUNK_SIZE),cz=Math.floor((z+HALF)/STONE_CHUNK_SIZE);
+  return {x,y,z,removed:false,mesh:stoneChunkMeshes.get(`${cx},${cz}`)||null,id:-1,kind:"stoneTerrain",typeIndex:2};
+ }
+ return null;
 }
 function removeSolid(x,y,z){
  solid.delete(key3(x,y,z));
@@ -251,13 +264,51 @@ function terrainHeight(x,z){
  Math.sin((x+z)*.105)*.9+Math.cos((x-z)*.075)*.55;
  return Math.max(1,Math.min(9,Math.round(1+r*(w+2.3)*1.45)));
 }
+for(let z=-HALF;z<HALF;z++)for(let x=-HALF;x<HALF;x++)heights[index(x,z)]=terrainHeight(x,z);
 
+// 地下の通路と広間は座標から決まるので、全員のゲームで同じ形になる。
+function isCaveCell(x,y,z){
+ if(!inWorld(x,z)||y<=MIN_Y)return false;
+ const top=heights[index(x,z)]-1;
+ const depth=top-y;
+ if(depth<0||depth>39)return false;
+ // 入口の坂道：(-42, 29)付近の地表から地下へ続く。
+ if(x>=-45&&x<=-39&&z>=28&&z<=44){
+  const centerDepth=.55+(z-29)*1.08;
+  if(z>=29&&Math.abs(depth-centerDepth)<=1.7)return true;
+ }
+ // 入口の奥に広がる最初の洞窟。
+ const chamberA=((x+39)/7.2)**2+((z-43)/8.0)**2+((depth-17)/4.5)**2;
+ if(chamberA<1)return true;
+ // 石の奥へ続く曲がりくねった通路。
+ if(x>=-34&&x<=15){
+  const pathZ=49+Math.sin((x+24)*.14)*5.2;
+  const pathDepth=25+Math.sin(x*.16)*2.5;
+  if(Math.abs(z-pathZ)<1.6&&Math.abs(depth-pathDepth)<1.65)return true;
+ }
+ // もう一つの水晶洞窟。
+ const chamberB=((x-27)/6.2)**2+((z-48)/7.5)**2+((depth-32)/4.2)**2;
+ if(chamberB<1)return true;
+ return false;
+}
+function terrainBaseTypeAt(x,y,z){
+ if(!inWorld(x,z)||y<MIN_Y||y>12)return -1;
+ const key=key3(x,y,z);
+ if(removedTerrain.has(key))return -1;
+ const top=heights[index(x,z)]-1;
+ if(y>top)return -1;
+ let type;
+ if(y===top)type=0;                 // 地表：草
+ else if(y>=top-3)type=1;           // 草の下：土3ブロック
+ else type=2;                       // その下：石。地中50ブロック以上
+ if(isCaveCell(x,y,z))return -1;
+ return type;
+}
 let grassCount=0,dirtCount=0;
 for(let z=-HALF;z<HALF;z++)for(let x=-HALF;x<HALF;x++){
- const h=terrainHeight(x,z);
- heights[index(x,z)]=h;
- grassCount++;
- dirtCount+=h-1;
+ const top=heights[index(x,z)]-1;
+ if(terrainBaseTypeAt(x,top,z)===0)grassCount++;
+ for(let layer=1;layer<=3;layer++)if(terrainBaseTypeAt(x,top-layer,z)===1)dirtCount++;
 }
 
 const cube=new THREE.BoxGeometry(1,1,1);
@@ -325,32 +376,89 @@ const dirtInfo=new Array(dirtCount);
 let gi=0,di=0;
 
 for(let z=-HALF;z<HALF;z++)for(let x=-HALF;x<HALF;x++){
- const h=heights[index(x,z)];
-
- for(let y=0;y<h-1;y++){
-  dummy.position.set(x,y+.5,z);
-  dummy.updateMatrix();
-  dirtMesh.setMatrixAt(di,dummy.matrix);
-
-  const info={x,y,z,removed:false,mesh:dirtMesh,id:di,kind:"terrain",typeIndex:1};
-  dirtInfo[di]=info;
-  addSolid(x,y,z,info);
-  di++;
+ const top=heights[index(x,z)]-1;
+ if(terrainBaseTypeAt(x,top,z)===0){
+  dummy.position.set(x,top+.5,z);dummy.updateMatrix();grassMesh.setMatrixAt(gi,dummy.matrix);
+  const info={x,y:top,z,removed:false,mesh:grassMesh,id:gi,kind:"terrain",typeIndex:0};
+  grassInfo[gi]=info;addSolid(x,top,z,info);gi++;
  }
-
- dummy.position.set(x,h-.5,z);
- dummy.updateMatrix();
- grassMesh.setMatrixAt(gi,dummy.matrix);
-
- const info={x,y:h-1,z,removed:false,mesh:grassMesh,id:gi,kind:"terrain",typeIndex:0};
- grassInfo[gi]=info;
- addSolid(x,h-1,z,info);
- gi++;
+ for(let layer=1;layer<=3;layer++){
+  const y=top-layer;
+  if(terrainBaseTypeAt(x,y,z)!==1)continue;
+  dummy.position.set(x,y+.5,z);dummy.updateMatrix();dirtMesh.setMatrixAt(di,dummy.matrix);
+  const info={x,y,z,removed:false,mesh:dirtMesh,id:di,kind:"terrain",typeIndex:1};
+  dirtInfo[di]=info;addSolid(x,y,z,info);di++;
+ }
 }
 
 grassMesh.instanceMatrix.needsUpdate=true;
 dirtMesh.instanceMatrix.needsUpdate=true;
 scene.add(grassMesh,dirtMesh);
+
+// 地下の石は、見える面だけをチャンク単位で描画して軽量化する。
+// 数百万個の立方体を個別に描画せず、洞窟の壁や採掘で露出した面だけをメッシュ化。
+const STONE_FACES=[
+ {n:[1,0,0],v:(x,y,z)=>[[x+.5,y,z-.5],[x+.5,y+1,z-.5],[x+.5,y+1,z+.5],[x+.5,y,z+.5]]},
+ {n:[-1,0,0],v:(x,y,z)=>[[x-.5,y,z+.5],[x-.5,y+1,z+.5],[x-.5,y+1,z-.5],[x-.5,y,z-.5]]},
+ {n:[0,1,0],v:(x,y,z)=>[[x-.5,y+1,z-.5],[x-.5,y+1,z+.5],[x+.5,y+1,z+.5],[x+.5,y+1,z-.5]]},
+ {n:[0,-1,0],v:(x,y,z)=>[[x-.5,y,z+.5],[x-.5,y,z-.5],[x+.5,y,z-.5],[x+.5,y,z+.5]]},
+ {n:[0,0,1],v:(x,y,z)=>[[x+.5,y,z+.5],[x+.5,y+1,z+.5],[x-.5,y+1,z+.5],[x-.5,y,z+.5]]},
+ {n:[0,0,-1],v:(x,y,z)=>[[x-.5,y,z-.5],[x-.5,y+1,z-.5],[x+.5,y+1,z-.5],[x+.5,y,z-.5]]}
+];
+function voxelOccupied(x,y,z){
+ if(!inWorld(x,z)||y<MIN_Y)return false;
+ const key=key3(x,y,z),explicit=solid.get(key);
+ if(explicit&&!explicit.removed)return true;
+ if(removedTerrain.has(key))return false;
+ return terrainBaseTypeAt(x,y,z)>=0;
+}
+function rebuildStoneChunk(cx,cz){
+ if(cx<0||cz<0||cx>=Math.ceil(WORLD/STONE_CHUNK_SIZE)||cz>=Math.ceil(WORLD/STONE_CHUNK_SIZE))return;
+ const chunkKey=`${cx},${cz}`;
+ const minX=-HALF+cx*STONE_CHUNK_SIZE,minZ=-HALF+cz*STONE_CHUNK_SIZE;
+ const maxX=Math.min(HALF,minX+STONE_CHUNK_SIZE),maxZ=Math.min(HALF,minZ+STONE_CHUNK_SIZE);
+ const positions=[],normals=[],uvs=[],indices=[];
+ for(let x=minX;x<maxX;x++)for(let z=minZ;z<maxZ;z++){
+  const top=heights[index(x,z)]-1;
+  for(let y=MIN_Y;y<=top-4;y++){
+   if(terrainBaseTypeAt(x,y,z)!==2)continue;
+   for(const face of STONE_FACES){
+    const n=face.n;
+    if(voxelOccupied(x+n[0],y+n[1],z+n[2]))continue;
+    const verts=face.v(x,y,z),base=positions.length/3;
+    for(let i=0;i<4;i++){
+     positions.push(...verts[i]);normals.push(...n);
+     uvs.push(i===0||i===3?0:1,i<2?0:1);
+    }
+    indices.push(base,base+1,base+2,base,base+2,base+3);
+   }
+  }
+ }
+ let mesh=stoneChunkMeshes.get(chunkKey);
+ if(!positions.length){
+  if(mesh){scene.remove(mesh);mesh.geometry.dispose();stoneChunkMeshes.delete(chunkKey);}
+  return;
+ }
+ const geometry=new THREE.BufferGeometry();
+ geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+ geometry.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));
+ geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+ geometry.setIndex(indices);geometry.computeBoundingSphere();
+ if(mesh){mesh.geometry.dispose();mesh.geometry=geometry;}
+ else{mesh=new THREE.Mesh(geometry,blockMaterials.stone);mesh.userData.stoneChunk={cx,cz};stoneChunkMeshes.set(chunkKey,mesh);scene.add(mesh);}
+ mesh.userData.stoneChunk={cx,cz};
+}
+function rebuildAllStoneChunks(){
+ const n=Math.ceil(WORLD/STONE_CHUNK_SIZE);
+ for(let cz=0;cz<n;cz++)for(let cx=0;cx<n;cx++)rebuildStoneChunk(cx,cz);
+}
+function rebuildStoneChunksNear(x,z){
+ const cx=Math.floor((x+HALF)/STONE_CHUNK_SIZE),cz=Math.floor((z+HALF)/STONE_CHUNK_SIZE);
+ const xs=[cx],zs=[cz],lx=(x+HALF)%STONE_CHUNK_SIZE,lz=(z+HALF)%STONE_CHUNK_SIZE;
+ if(lx===0)xs.push(cx-1);if(lx===STONE_CHUNK_SIZE-1)xs.push(cx+1);
+ if(lz===0)zs.push(cz-1);if(lz===STONE_CHUNK_SIZE-1)zs.push(cz+1);
+ for(const ax of xs)for(const az of zs)rebuildStoneChunk(ax,az);
+}
 
 // 15種類のブロック。画像はすべてHTML内に埋め込み、別ファイルなしで使える。
 const blockTypes=[
@@ -392,6 +500,17 @@ if(loadedSave&&Array.isArray(loadedSave.customBlocks)){
  }
 }
 
+// 草・土・石・原木・葉っぱは、採掘した数だけ設置できるサバイバル制。
+const LIMITED_BLOCK_TYPES=new Set([0,1,2,4,6]);
+const blockStock=new Map([0,1,2,4,6].map(i=>[i,Math.max(0,Math.floor(Number(loadedSave&&loadedSave.inventory&&loadedSave.inventory[i])||0))]));
+function isLimitedBlock(typeIndex){return LIMITED_BLOCK_TYPES.has(typeIndex);}
+function getBlockStock(typeIndex){return Math.max(0,blockStock.get(typeIndex)||0);}
+function changeBlockStock(typeIndex,delta){
+ if(!isLimitedBlock(typeIndex))return;
+ blockStock.set(typeIndex,Math.max(0,getBlockStock(typeIndex)+delta));
+ updateStockUI();
+}
+
 // インベントリの10枠。nullなら空欄になる。
 const slots=[0,1,2,3,4,5,6,7,8,9];
 let selected=0;
@@ -406,12 +525,28 @@ const posLabel=document.getElementById("pos");
 function chooseSlot(n){
  selected=n;
  const typeIndex=slots[n];
- selectedName.textContent=typeIndex===null?"なし":blockTypes[typeIndex].name;
+ selectedName.textContent=typeIndex===null?"なし":blockTypes[typeIndex].name+(isLimitedBlock(typeIndex)?`（${getBlockStock(typeIndex)}個）`:"");
 
  [...hotbar.children].forEach((el,i)=>el.classList.toggle("selected",i===n));
  [...items.children].forEach((el,i)=>el.classList.toggle("selected",i===typeIndex));
 }
 
+function updateStockUI(){
+ [...hotbar.children].forEach((slot,i)=>{
+  const typeIndex=slots[i];if(typeIndex===null||typeIndex===undefined)return;
+  let count=slot.querySelector(".stack-count");
+  if(isLimitedBlock(typeIndex)){
+   if(!count){count=document.createElement("span");count.className="stack-count";slot.appendChild(count);}
+   count.textContent=String(getBlockStock(typeIndex));
+   slot.title=`${i===9?0:i+1}番：${blockTypes[typeIndex].name}（${getBlockStock(typeIndex)}個）`;
+  }else if(count)count.remove();
+ });
+ [...items.children].forEach((el,i)=>{
+  const count=el.querySelector(".itemCount");
+  if(isLimitedBlock(i)){if(count)count.textContent=`×${getBlockStock(i)}`;}
+ });
+ const t=slots[selected];if(t!==null&&t!==undefined)selectedName.textContent=blockTypes[t].name+(isLimitedBlock(t)?`（${getBlockStock(t)}個）`:"");
+}
 function buildInventory(){
  hotbar.innerHTML="";
  items.innerHTML="";
@@ -434,6 +569,9 @@ function buildInventory(){
    }
    slot.appendChild(swatch);
    slot.title=`${i===9?0:i+1}番：${type.name}`;
+   if(isLimitedBlock(typeIndex)){
+    const stack=document.createElement("span");stack.className="stack-count";stack.textContent=String(getBlockStock(typeIndex));slot.appendChild(stack);
+   }
   }
 
   slot.addEventListener("click",()=>chooseSlot(i));
@@ -452,6 +590,7 @@ function buildInventory(){
   const label=document.createElement("span");
   label.textContent=`${i+1}. ${b.name}`;
   el.append(swatch,label);
+  if(isLimitedBlock(i)){const count=document.createElement("span");count.className="itemCount";count.textContent=`×${getBlockStock(i)}`;el.appendChild(count);}
   el.addEventListener("click",()=>{
    slots[selected]=i;
    buildInventory();
@@ -550,15 +689,66 @@ function isSneaking(){return !!(keys.ShiftLeft||keys.ShiftRight);}
 const placedBlocks=[];
 const placedGroup=new THREE.Group();
 scene.add(placedGroup);
-const removedTerrain=new Set();
+
+// 原木・葉っぱを本物のブロックとして配置。木はInstancedMeshでまとめて軽く描画する。
+function forestHash(x,z){const v=Math.sin(x*127.1+z*311.7)*43758.5453123;return v-Math.floor(v);}
+function generateForestBlocks(){
+ const cells=[],occupied=new Set();
+ const candidates=[[-7,24],[7,27],[-19,5],[27,7],[41,-18],[-31,-13],[4,-36],[39,31],[-48,5]];
+ for(let x=20;x<=65;x+=5)for(let z=15;z<=65;z+=5){
+  if(forestHash(x,z)<.34)continue;
+  if(Math.hypot(x,z)<18)continue;
+  if(Math.hypot(x-56,z-53)<6)continue; // 古代遺跡のまわりは少し開けておく
+  candidates.push([x,z]);
+ }
+ const usedTrees=new Set();
+ for(const [x,z] of candidates){
+  const treeKey=`${x},${z}`;if(usedTrees.has(treeKey))continue;usedTrees.add(treeKey);
+  if(!inWorld(x,z))continue;
+  const groundY=heights[index(x,z)];
+  const trunkHeight=3+(Math.floor(forestHash(x+9,z+4)*2));
+  const addCell=(bx,by,bz,typeIndex)=>{
+   if(!inWorld(bx,bz)||terrainBaseTypeAt(bx,by,bz)>=0)return;
+   const key=key3(bx,by,bz);if(occupied.has(key)||solid.has(key)||removedTerrain.has(key))return;
+   occupied.add(key);cells.push({x:bx,y:by,z:bz,typeIndex});
+  };
+  for(let dy=0;dy<trunkHeight;dy++)addCell(x,groundY+dy,z,4);
+  for(let dy=2;dy<=5;dy++){
+   const radius=dy===5?1:2;
+   for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++){
+    if(Math.abs(dx)+Math.abs(dz)>3)continue;
+    if(dx===0&&dz===0&&dy<trunkHeight)continue;
+    addCell(x+dx,groundY+dy,z+dz,6);
+   }
+  }
+ }
+ const logs=cells.filter(c=>c.typeIndex===4),leaves=cells.filter(c=>c.typeIndex===6);
+ const makeMesh=(records,material)=>{
+  if(!records.length)return null;
+  const mesh=new THREE.InstancedMesh(cube,material,records.length);mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  const infos=new Array(records.length);
+  records.forEach((c,i)=>{
+   dummy.position.set(c.x,c.y+.5,c.z);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);
+   const info={...c,removed:false,kind:"tree",mesh,id:i};infos[i]=info;treeBlocks.push(info);addSolid(c.x,c.y,c.z,info);
+  });
+  mesh.instanceMatrix.needsUpdate=true;scene.add(mesh);return {mesh,infos};
+ };
+ const logData=makeMesh(logs,blockTypes[4].material),leafData=makeMesh(leaves,blockTypes[6].material);
+ treeLogMesh=logData?logData.mesh:null;treeLogInfo=logData?logData.infos:[];
+ treeLeafMesh=leafData?leafData.mesh:null;treeLeafInfo=leafData?leafData.infos:[];
+}
+// 先に木を登録すると石の描画も周囲のブロックを考慮できる。
+generateForestBlocks();
+rebuildAllStoneChunks();
 
 // 設置・破壊したブロックを保存。画像とワールド変更を同じブラウザに記録する。
 function saveWorld(){
  try{
   const payload={
-   version:1,
+   version:2,
    removedTerrain:Array.from(removedTerrain,k=>k.split(",").map(Number)),
    placed:placedBlocks.filter(b=>!b.removed).map(b=>[b.x,b.y,b.z,b.typeIndex]),
+   inventory:Object.fromEntries(blockStock),
    customBlocks:blockTypes.filter(b=>b.custom&&typeof b.dataUrl==="string"&&b.dataUrl.startsWith("data:image/")).map(b=>({name:b.name,dataUrl:b.dataUrl}))
   };
   localStorage.setItem(SAVE_KEY,JSON.stringify(payload));
@@ -582,10 +772,10 @@ function restoreWorld(){
     const [x,y,z]=coords.map(Number);
     if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||!inWorld(x,z))continue;
     const info=getSolid(x,y,z);
-    if(!info||info.kind!=="terrain")continue;
+    if(!info||!["terrain","stoneTerrain","tree"].includes(info.kind))continue;
     info.removed=true;
     removeSolid(x,y,z);
-    hideInstance(info.mesh,info.id);
+    if(info.kind==="terrain"||info.kind==="tree")hideInstance(info.mesh,info.id);
     removedTerrain.add(key3(x,y,z));
     restoredRemoved++;
    }
@@ -595,7 +785,7 @@ function restoreWorld(){
     if(!Array.isArray(data)||data.length<4)continue;
     const [x,y,z,typeIndex]=data.map(Number);
     if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||!Number.isInteger(typeIndex))continue;
-    if(!inWorld(x,z)||y<0||y>100||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z))continue;
+    if(!inWorld(x,z)||y<=MIN_Y||y>100||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z))continue;
     const type=blockTypes[typeIndex];
     const mesh=new THREE.Mesh(cube,type.material);
     mesh.position.set(x,y+.5,z);
@@ -624,13 +814,13 @@ function groundTopAt(x,z,maxFeet){
  const minZ=Math.floor(z-PLAYER_HALF+.5);
  const maxZ=Math.floor(z+PLAYER_HALF+.5);
  const maxBlockY=Math.floor(maxFeet)-1; // 足より上のブロックを地面扱いしない
- let highest=0;
+ let highest=MIN_Y;
  for(let gx=minX;gx<=maxX;gx++)for(let gz=minZ;gz<=maxZ;gz++){
   if(!inWorld(gx,gz))continue;
   const overlapX=Math.min(x+PLAYER_HALF,gx+.5)-Math.max(x-PLAYER_HALF,gx-.5);
   const overlapZ=Math.min(z+PLAYER_HALF,gz+.5)-Math.max(z-PLAYER_HALF,gz-.5);
   if(overlapX<.03||overlapZ<.03)continue;
-  for(let y=maxBlockY;y>=0;y--){
+  for(let y=maxBlockY;y>=MIN_Y;y--){
    if(getSolid(gx,y,gz)){
     highest=Math.max(highest,y+1);
     break;
@@ -692,7 +882,9 @@ function getTarget(){
  raycaster.setFromCamera(center,camera);
  raycaster.far=REACH;
 
- const targets=[grassMesh,dirtMesh];
+ const targets=[grassMesh,dirtMesh,...stoneChunkMeshes.values()];
+ if(treeLogMesh)targets.push(treeLogMesh);
+ if(treeLeafMesh)targets.push(treeLeafMesh);
  for(const b of placedBlocks)if(!b.removed)targets.push(b.mesh);
  // 冒険中はスライムも照準対象にする。ワールド自体の描画は今までどおり軽量なInstancedMeshを使用。
  for(const mob of adventureMobs.values())if(!mob.dead)targets.push(mob.body);
@@ -713,12 +905,72 @@ function hideInstance(mesh,id){
 function infoFromHit(hit){
  if(hit.object===grassMesh)return grassInfo[hit.instanceId];
  if(hit.object===dirtMesh)return dirtInfo[hit.instanceId];
+ if(hit.object===treeLogMesh)return treeLogInfo[hit.instanceId];
+ if(hit.object===treeLeafMesh)return treeLeafInfo[hit.instanceId];
+ if(hit.object.userData&&hit.object.userData.stoneChunk&&hit.face){
+  const n=hit.face.normal;
+  const x=Math.round(hit.point.x-n.x*.501),y=Math.floor(hit.point.y-n.y*.501),z=Math.round(hit.point.z-n.z*.501);
+  const info=getSolid(x,y,z);
+  if(info&&info.kind==="stoneTerrain")return info;
+ }
  return hit.object.userData.blockInfo||null;
 }
 
-// 左クリック：狙ったブロックだけを壊す
-function breakBlock(){
+// 採掘中はブロック表面に段階的なひび割れを重ね、約0.5秒後に破壊する。
+const BREAK_DURATION=500;
+let breakSession=null,leftMouseHeld=false,crackStage=-1;
+const crackCanvas=document.createElement("canvas");crackCanvas.width=128;crackCanvas.height=128;
+const crackCtx=crackCanvas.getContext("2d");
+const crackTexture=new THREE.CanvasTexture(crackCanvas);crackTexture.colorSpace=THREE.SRGBColorSpace;crackTexture.magFilter=THREE.NearestFilter;crackTexture.minFilter=THREE.NearestFilter;
+const crackMaterial=new THREE.MeshBasicMaterial({map:crackTexture,transparent:true,opacity:.88,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,side:THREE.DoubleSide});
+const crackOverlay=new THREE.Mesh(cube,crackMaterial);crackOverlay.visible=false;crackOverlay.scale.setScalar(1.008);scene.add(crackOverlay);
+const CRACK_PATHS=[
+ [[64,62],[54,52],[58,41],[47,32],[43,18]],
+ [[54,52],[37,56],[27,48],[16,51]],
+ [[58,41],[72,34],[85,37],[95,28]],
+ [[64,62],[72,76],[68,90]],
+ [[47,32],[33,23],[20,27]],
+ [[72,76],[86,74],[99,84]],
+ [[37,56],[31,69],[17,76]]
+];
+function drawCracks(stage){
+ crackCtx.clearRect(0,0,128,128);
+ for(let p=0;p<=stage&&p<CRACK_PATHS.length;p++){
+  const points=CRACK_PATHS[p];crackCtx.beginPath();crackCtx.moveTo(points[0][0],points[0][1]);
+  for(let i=1;i<points.length;i++)crackCtx.lineTo(points[i][0],points[i][1]);
+  crackCtx.strokeStyle="rgba(235,235,225,.8)";crackCtx.lineWidth=5;crackCtx.stroke();
+  crackCtx.strokeStyle="rgba(22,22,19,.95)";crackCtx.lineWidth=2.8;crackCtx.stroke();
+ }
+ crackTexture.needsUpdate=true;
+}
+function clearBreaking(){breakSession=null;crackOverlay.visible=false;crackStage=-1;drawCracks(-1);}
+function beginBlockBreaking(){
  const hit=getTarget();
+ if(!hit){statusLabel.textContent="十字をブロックやスライムに合わせてね";return;}
+ const mobId=hit.object&&hit.object.userData&&hit.object.userData.adventureMobId;
+ if(mobId){performBreak(hit);return;}
+ const info=infoFromHit(hit);if(!info||info.removed)return;
+ if(info.kind==="stoneTerrain"&&info.y===MIN_Y){statusLabel.textContent="一番下の岩盤は壊せないよ";return;}
+ breakSession={key:key3(info.x,info.y,info.z),started:performance.now(),x:info.x,y:info.y,z:info.z};
+ crackOverlay.position.set(info.x,info.y+.5,info.z);crackOverlay.visible=true;drawCracks(0);crackStage=0;
+}
+function updateBreaking(now){
+ if(!breakSession)return;
+ if(!leftMouseHeld||document.pointerLockElement!==renderer.domElement||inventory.style.display==="block"){clearBreaking();return;}
+ const hit=getTarget();if(!hit){clearBreaking();return;}
+ const mobId=hit.object&&hit.object.userData&&hit.object.userData.adventureMobId;
+ const info=mobId?null:infoFromHit(hit);
+ if(!info||key3(info.x,info.y,info.z)!==breakSession.key){clearBreaking();return;}
+ const progress=Math.max(0,Math.min(1,(now-breakSession.started)/BREAK_DURATION));
+ const stage=Math.min(CRACK_PATHS.length-1,Math.floor(progress*CRACK_PATHS.length));
+ if(stage!==crackStage){drawCracks(stage);crackStage=stage;}
+ crackOverlay.position.set(info.x,info.y+.5,info.z);
+ if(progress>=1){clearBreaking();performBreak(hit);}
+}
+
+// 左クリック後、採掘アニメーションが終わったブロックを壊す。
+function performBreak(hitOverride=null){
+ const hit=hitOverride||getTarget();
  if(!hit){
   statusLabel.textContent="十字をブロックかスライムに合わせてね";
   return;
@@ -732,24 +984,27 @@ function breakBlock(){
 
  const info=infoFromHit(hit);
  if(!info||info.removed)return;
+ if(info.kind==="stoneTerrain"&&info.y===MIN_Y){statusLabel.textContent="一番下の岩盤は壊せないよ";return;}
 
+ const wasBase=["terrain","stoneTerrain","tree"].includes(info.kind);
  info.removed=true;
  removeSolid(info.x,info.y,info.z);
- if(info.kind==="terrain")removedTerrain.add(key3(info.x,info.y,info.z));
+ if(wasBase)removedTerrain.add(key3(info.x,info.y,info.z));
+ const typeIndex=Number.isInteger(info.typeIndex)?info.typeIndex:0;
+ if(isLimitedBlock(typeIndex))changeBlockStock(typeIndex,1);
 
- if(info.kind==="terrain"){
-  hideInstance(info.mesh,info.id);
- }else{
-  placedGroup.remove(info.mesh);
- }
+ if(info.kind==="terrain"||info.kind==="tree")hideInstance(info.mesh,info.id);
+ else if(info.kind==="stoneTerrain")rebuildStoneChunksNear(info.x,info.z);
+ else placedGroup.remove(info.mesh);
+ if(info.kind==="terrain")rebuildStoneChunksNear(info.x,info.z);
 
- statusLabel.textContent=blockTypes[info.typeIndex??0].name+"を壊した！";
+ statusLabel.textContent=blockTypes[typeIndex]?.name+"を壊した！"+(isLimitedBlock(typeIndex)?`（所持 ${getBlockStock(typeIndex)}個）`:"");
  saveWorld();
  publishBlockChange({action:"break",x:info.x,y:info.y,z:info.z});
 }
 
 // -------------------- 冒険モード --------------------
-// 固定スポーンのスライム・宝箱・クリスタル・古代の門を用意する。
+// 固定スポーンのスライム・宝箱・クリスタルと、眺められる古代遺跡を用意する。
 // ブロック世界は従来どおり保存され、冒険の進行状況は別キーで保存する。
 const ADVENTURE_SAVE_KEY="MY_BLOCK_WORLD_ADVENTURE_V1";
 const adventureHUD=document.getElementById("adventureHud");
@@ -785,9 +1040,6 @@ const treeLeafGeom=new THREE.BoxGeometry(2.6,1.55,2.5);
 const treeTopGeom=new THREE.BoxGeometry(1.85,1.55,1.85);
 const ruinStoneMat=new THREE.MeshStandardMaterial({color:0x767f8e,roughness:.93});
 const ruinTrimMat=new THREE.MeshStandardMaterial({color:0xb7c4ca,roughness:.72});
-const portalMat=new THREE.MeshStandardMaterial({color:0xa14dff,emissive:0x5511ac,emissiveIntensity:.7,roughness:.3,metalness:.2});
-const portalDarkMat=new THREE.MeshBasicMaterial({color:0x271043,transparent:true,opacity:.55,side:THREE.DoubleSide,depthWrite:false});
-const portalLockedMat=new THREE.MeshBasicMaterial({color:0x111522,transparent:true,opacity:.85,depthWrite:false,side:THREE.DoubleSide});
 const crystalMat=new THREE.MeshStandardMaterial({color:0x58eaff,emissive:0x0a9fc2,emissiveIntensity:1.2,roughness:.22,metalness:.12});
 const chestWoodMat=new THREE.MeshStandardMaterial({color:0x8b5129,roughness:.88});
 const chestLidMat=new THREE.MeshStandardMaterial({color:0xb87936,roughness:.75});
@@ -800,11 +1052,7 @@ let adventureHealth=100;
 let adventureLastHitTime=0;
 let adventureLastPlayerAttack=0;
 let adventureHudLastRefresh=0;
-let adventureCompleted=false;
-let adventurePortal=null;
 let cloudAdventureSubs=null;
-const REQUIRED_MOBS=5;
-const REQUIRED_CHESTS=3;
 
 const ADVENTURE_MOB_SPAWNS=[
  {id:"slime-01",x:9,z:15},{id:"slime-02",x:-14,z:19},
@@ -830,14 +1078,9 @@ function makeAdventureDecorationBox(geom,mat,x,y,z,group=adventureScenery){
  const mesh=new THREE.Mesh(geom,mat);mesh.position.set(x,y,z);group.add(mesh);return mesh;
 }
 function addAdventureTree(x,z,variant=0){
- const y=adventureSurfaceY(x,z),g=new THREE.Group();g.position.set(x,y,z);
- const trunk=new THREE.Mesh(treeTrunkGeom,treeTrunkMat);trunk.position.y=1.17;g.add(trunk);
- const leaves=new THREE.Mesh(treeLeafGeom,variant%2?treeLeafLightMat:treeLeafMat);leaves.position.y=2.35;g.add(leaves);
- const top=new THREE.Mesh(treeTopGeom,treeLeafMat);top.position.set(0,3.25,0);g.add(top);
- adventureScenery.add(g);
- adventureTreeColliders.push({x,z,baseY:y,r:.38,height:2.35});
+ // 森の木はワールド生成時に原木・葉っぱのブロックとして作成済み。
 }
-function addRuinsAndPortal(){
+function addAncientRuins(){
  const x=56,z=53,y=adventureSurfaceY(x,z),g=new THREE.Group();g.position.set(x,y,z);
  makeAdventureDecorationBox(new THREE.BoxGeometry(.85,3.2,.85),ruinStoneMat,-1.65,1.6,0,g);
  makeAdventureDecorationBox(new THREE.BoxGeometry(.85,3.2,.85),ruinStoneMat,1.65,1.6,0,g);
@@ -845,14 +1088,7 @@ function addRuinsAndPortal(){
  makeAdventureDecorationBox(new THREE.BoxGeometry(3.65,.18,1.05),ruinTrimMat,0,3.03,0,g);
  makeAdventureDecorationBox(new THREE.BoxGeometry(.95,.45,.95),ruinStoneMat,-2.0,.22,0,g);
  makeAdventureDecorationBox(new THREE.BoxGeometry(.95,.45,.95),ruinStoneMat,2.0,.22,0,g);
- const ring=new THREE.Mesh(new THREE.TorusGeometry(1.38,.17,9,28),portalMat);ring.position.set(0,1.92,-.08);g.add(ring);
- const core=new THREE.Mesh(new THREE.CircleGeometry(1.22,28),portalDarkMat);core.position.set(0,1.92,-.10);g.add(core);
- const runeMat=new THREE.MeshStandardMaterial({color:0x54e6ff,emissive:0x168caf,emissiveIntensity:.8});
- for(let i=0;i<3;i++){
-  const rune=new THREE.Mesh(new THREE.OctahedronGeometry(.16,0),runeMat);
-  rune.position.set((i-1)*.52,.75,.58);g.add(rune);
- }
- adventureScenery.add(g);adventurePortal={id:"ancient-gate",x,z,y,group:g,ring,core};
+ adventureScenery.add(g);
  // 洞窟入口的石拱和发光水晶，作为远处的探索地标。
  const cx=-42,cz=29,cy=adventureSurfaceY(cx,cz),cave=new THREE.Group();cave.position.set(cx,cy,cz);
  makeAdventureDecorationBox(new THREE.BoxGeometry(.65,2.4,.65),ruinStoneMat,-1.15,1.2,0,cave);
@@ -894,8 +1130,8 @@ function createAdventureCrystal(spec){
 function createAdventureWorld(){
  if(adventureWorldCreated)return;
  adventureWorldCreated=true;
- [[-7,24],[7,27],[-19,5],[27,7],[41,-18],[-31,-13],[4,-36],[39,31],[-48,5]].forEach((p,i)=>addAdventureTree(p[0],p[1],i));
- addRuinsAndPortal();
+ // 森はワールドの初期生成時にブロックとして作成済み。
+ addAncientRuins();
  ADVENTURE_MOB_SPAWNS.forEach(createAdventureMob);
  ADVENTURE_CHEST_SPAWNS.forEach(createAdventureChest);
  ADVENTURE_CRYSTAL_SPAWNS.forEach(createAdventureCrystal);
@@ -907,7 +1143,7 @@ function adventureStorageKey(){
 function saveAdventureLocal(){
  try{
   localStorage.setItem(adventureStorageKey(),JSON.stringify({
-   version:1,kills:adventureKills,crystals:adventureCrystalsCount,health:adventureHealth,completed:adventureCompleted,
+   version:2,kills:adventureKills,crystals:adventureCrystalsCount,health:adventureHealth,
    defeated:Array.from(defeatedAdventureMobs),opened:Array.from(openedAdventureChests),collected:Array.from(collectedAdventureCrystals)
   }));
  }catch(e){console.warn("冒険データの保存に失敗",e);}
@@ -919,7 +1155,6 @@ function loadLocalAdventureState(sharedOnly=false){
   adventureKills=Math.max(0,Number(d.kills)||0);
   adventureCrystalsCount=Math.max(0,Number(d.crystals)||0);
   adventureHealth=Math.max(1,Math.min(100,Number(d.health)||100));
-  adventureCompleted=!!d.completed;
   if(sharedOnly)return;
   for(const id of Array.isArray(d.defeated)?d.defeated:[])if(ADVENTURE_MOB_SPAWNS.some(m=>m.id===id))defeatedAdventureMobs.add(id);
   for(const id of Array.isArray(d.opened)?d.opened:[])if(ADVENTURE_CHEST_SPAWNS.some(c=>c.id===id))openedAdventureChests.add(id);
@@ -944,26 +1179,21 @@ function updateAdventureHUD(){
  advHealthText.textContent=`${Math.max(0,Math.round(adventureHealth))} / 100`;
  advHealthBar.style.width=`${Math.max(0,adventureHealth)}%`;
  advHealthBar.style.background=adventureHealth<30?"linear-gradient(90deg,#ff453a,#ff9b57)":"linear-gradient(90deg,#32cf74,#a8f060)";
- advMobsText.textContent=`${Math.min(REQUIRED_MOBS,defeatedAdventureMobs.size)} / ${REQUIRED_MOBS}`;
- advChestsText.textContent=`${openedAdventureChests.size} / ${REQUIRED_CHESTS}`;
+ advMobsText.textContent=String(defeatedAdventureMobs.size);
+ advChestsText.textContent=String(openedAdventureChests.size);
  advCrystalsText.textContent=String(adventureCrystalsCount);
- if(adventureCompleted){advGoal.textContent="🎉 古代の門を突破！冒険クリア！";}
- else if(defeatedAdventureMobs.size>=REQUIRED_MOBS&&openedAdventureChests.size>=REQUIRED_CHESTS){advGoal.textContent="門が開いた！南東の古代遺跡を目指そう";}
- else{advGoal.textContent=`目標：スライム${Math.max(0,REQUIRED_MOBS-defeatedAdventureMobs.size)}体・宝箱${Math.max(0,REQUIRED_CHESTS-openedAdventureChests.size)}個`+(defeatedAdventureMobs.size>=REQUIRED_MOBS?"（討伐OK）":"");}
+ advGoal.textContent="自由に探索しよう！スライム・宝箱・クリスタルを探してみよう。";
  let target=null,label="";
- for(const c of adventureChests.values())if(!openedAdventureChests.has(c.id)){
-  const d=Math.hypot(px-c.x,pz-c.z);if(!target||d<target.d)target={x:c.x,z:c.z,d},label="宝箱";
- }
- if(!target){for(const m of adventureMobs.values())if(!defeatedAdventureMobs.has(m.id)){
-  const d=Math.hypot(px-m.x,pz-m.z);if(!target||d<target.d)target={x:m.x,z:m.z,d},label="スライム";
- }}
- if(defeatedAdventureMobs.size>=REQUIRED_MOBS&&openedAdventureChests.size>=REQUIRED_CHESTS&&adventurePortal){target={x:adventurePortal.x,z:adventurePortal.z,d:Math.hypot(px-adventurePortal.x,pz-adventurePortal.z)};label="古代の門";}
+ const consider=(x,z,kind)=>{const d=Math.hypot(px-x,pz-z);if(!target||d<target.d)target={x,z,d},label=kind;};
+ for(const c of adventureChests.values())if(!openedAdventureChests.has(c.id))consider(c.x,c.z,"宝箱");
+ for(const m of adventureMobs.values())if(!defeatedAdventureMobs.has(m.id))consider(m.x,m.z,"スライム");
+ for(const c of adventureCrystals.values())if(!collectedAdventureCrystals.has(c.id))consider(c.x,c.z,"クリスタル");
  if(target){
   const dx=target.x-px,dz=target.z-pz;let dir="";
   if(Math.abs(dx)>2)dir+=dx>0?"東":"西";
   if(Math.abs(dz)>2)dir+=dz>0?"南":"北";
-  advDirection.textContent=`次の目標：${label}（${dir||"すぐ近く"}・約${Math.round(target.d)}m） / F：調べる`;
- }else advDirection.textContent="F：近くのものを調べる";
+  advDirection.textContent=`近くの発見候補：${label}（${dir||"すぐ近く"}・約${Math.round(target.d)}m） / F：宝箱を開ける`;
+ }else advDirection.textContent="自由に探索中！またスライムや宝箱を探してみよう。";
 }
 function syncAdventureEvent(event){
  if(!event||!event.id)return;
@@ -1028,11 +1258,7 @@ function interactAdventure(){
   const d=Math.hypot(px-chest.x,pz-chest.z);if(d<bestD)best=chest,bestD=d;
  }
  if(best){applyAdventureEvent({kind:"chestOpened",id:best.id,by:cloudUid||netPeer?.id||"local"},true,true);return;}
- if(adventurePortal){const d=Math.hypot(px-adventurePortal.x,pz-adventurePortal.z);if(d<3.3){
-  if(defeatedAdventureMobs.size<REQUIRED_MOBS||openedAdventureChests.size<REQUIRED_CHESTS){statusLabel.textContent=`門は閉じているよ。スライム${Math.max(0,REQUIRED_MOBS-defeatedAdventureMobs.size)}体・宝箱${Math.max(0,REQUIRED_CHESTS-openedAdventureChests.size)}個が必要！`;return;}
-  adventureCompleted=true;saveAdventureLocal();updateAdventureHUD();statusLabel.textContent="冒険クリア！古代の門を突破したよ！";return;
- }}
- statusLabel.textContent="近くに調べられる宝箱や門がないよ。目標の方向へ進もう！";
+ statusLabel.textContent="近くに宝箱がないよ。自由に探索して、スライムやクリスタルを探してみよう！";
 }
 function updateAdventureWorld(dt,now){
  if(!adventureStarted||startOverlay.style.display!=="none")return;
@@ -1057,12 +1283,6 @@ function updateAdventureWorld(dt,now){
  for(const crystal of adventureCrystals.values())if(!crystal.collected&&!collectedAdventureCrystals.has(crystal.id)){
   crystal.group.rotation.y+=dt*.9;crystal.group.position.y=adventureSurfaceY(crystal.x,crystal.z)+.72+Math.sin(now*.003+crystal.phase)*.12;
   if(Math.hypot(px-crystal.x,pz-crystal.z)<1.15&&Math.abs(feet-adventureSurfaceY(crystal.x,crystal.z))<2.6){applyAdventureEvent({kind:"crystalCollected",id:crystal.id,by:cloudUid||netPeer?.id||"local"},true,true);}
- }
- if(adventurePortal){
-  adventurePortal.ring.rotation.z+=dt*.22;
-  const unlocked=defeatedAdventureMobs.size>=REQUIRED_MOBS&&openedAdventureChests.size>=REQUIRED_CHESTS;
-  adventurePortal.ring.material=unlocked?portalMat:ruinStoneMat;
-  adventurePortal.core.material=unlocked?portalDarkMat:portalLockedMat;
  }
 }
 
@@ -1089,7 +1309,7 @@ function placeBlock(){
  const y=target.y+Math.round(n.y);
  const z=target.z+Math.round(n.z);
 
- if(!inWorld(x,z)||y<0||y>100){
+ if(!inWorld(x,z)||y<=MIN_Y||y>100){
   statusLabel.textContent="そこには置けないよ";
   return;
  }
@@ -1111,6 +1331,11 @@ function placeBlock(){
  }
 
  const type=blockTypes[typeIndex];
+ if(isLimitedBlock(typeIndex)&&getBlockStock(typeIndex)<=0){
+  statusLabel.textContent=`${type.name}が足りないよ。まず同じブロックを採掘して集めよう！`;
+  return;
+ }
+ if(isLimitedBlock(typeIndex))changeBlockStock(typeIndex,-1);
  const mesh=new THREE.Mesh(cube,type.material);
  mesh.position.set(x,y+.5,z);
  mesh.userData.blockInfo={
@@ -1122,7 +1347,8 @@ function placeBlock(){
  addSolid(x,y,z,info);
  placedGroup.add(mesh);
 
- statusLabel.textContent=type.name+"を置いた！";
+ statusLabel.textContent=type.name+"を置いた！"+(isLimitedBlock(typeIndex)?`（残り ${getBlockStock(typeIndex)}個）`:"");
+ rebuildStoneChunksNear(x,z);
  saveWorld();
  publishBlockChange({action:"place",x,y,z,typeIndex});
 }
@@ -1228,28 +1454,27 @@ function resetToNetworkSnapshot(snapshot){
   info.removed=true;
  }
  placedBlocks.length=0;
- for(const key of Array.from(removedTerrain)){
+ const previouslyRemoved=Array.from(removedTerrain);
+ removedTerrain.clear();
+ for(const key of previouslyRemoved){
   const info=terrainCatalog.get(key);
   if(!info)continue;
   info.removed=false;
-  dummy.position.set(info.x,info.y+.5,info.z);
-  dummy.scale.set(1,1,1);
-  dummy.updateMatrix();
-  info.mesh.setMatrixAt(info.id,dummy.matrix);
-  info.mesh.instanceMatrix.needsUpdate=true;
-  addSolid(info.x,info.y,info.z,info);
+  if(info.kind==="terrain"||info.kind==="tree"){
+   dummy.position.set(info.x,info.y+.5,info.z);dummy.scale.set(1,1,1);dummy.updateMatrix();
+   info.mesh.setMatrixAt(info.id,dummy.matrix);info.mesh.instanceMatrix.needsUpdate=true;
+   addSolid(info.x,info.y,info.z,info);
+  }
  }
- removedTerrain.clear();
- // ホストの破壊履歴を適用。
+ // ホストの破壊履歴を適用。地下の石は地形データから再計算できる。
  for(const coords of snapshot.removedTerrain||[]){
   if(!Array.isArray(coords)||coords.length!==3)continue;
   const [x,y,z]=coords.map(Number);
   if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||!inWorld(x,z))continue;
-  const key=key3(x,y,z),info=terrainCatalog.get(key);
-  if(!info)continue;
-  info.removed=true;
-  removeSolid(x,y,z);
-  hideInstance(info.mesh,info.id);
+  const key=key3(x,y,z),info=getSolid(x,y,z);
+  if(!info||!["terrain","stoneTerrain","tree"].includes(info.kind))continue;
+  info.removed=true;removeSolid(x,y,z);
+  if(info.kind==="terrain"||info.kind==="tree")hideInstance(info.mesh,info.id);
   removedTerrain.add(key);
  }
  // ホストの設置ブロックを適用。
@@ -1257,13 +1482,14 @@ function resetToNetworkSnapshot(snapshot){
   if(!Array.isArray(data)||data.length<4)continue;
   const [x,y,z,typeIndex]=data.map(Number);
   if(!Number.isInteger(x)||!Number.isInteger(y)||!Number.isInteger(z)||!Number.isInteger(typeIndex))continue;
-  if(!inWorld(x,z)||y<0||y>100||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z))continue;
+  if(!inWorld(x,z)||y<=MIN_Y||y>100||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z))continue;
   const type=blockTypes[typeIndex],mesh=new THREE.Mesh(cube,type.material);
   mesh.position.set(x,y+.5,z);
   const info={x,y,z,removed:false,kind:"placed",mesh,typeIndex};
   mesh.userData.blockInfo=info;
   placedBlocks.push(info);addSolid(x,y,z,info);placedGroup.add(mesh);
  }
+ rebuildAllStoneChunks();
  saveWorld();
  saveStatus.textContent="共有ワールドを保存済み";
 }
@@ -1329,17 +1555,20 @@ function applyNetworkBlockChange(change){
  if(change.action==="break"){
   const info=getSolid(x,y,z);if(!info)return false;
   info.removed=true;removeSolid(x,y,z);
-  if(info.kind==="terrain")removedTerrain.add(key3(x,y,z));
-  if(info.kind==="terrain")hideInstance(info.mesh,info.id);else placedGroup.remove(info.mesh);
+  if(["terrain","stoneTerrain","tree"].includes(info.kind))removedTerrain.add(key3(x,y,z));
+  if(info.kind==="terrain"||info.kind==="tree")hideInstance(info.mesh,info.id);
+  else if(info.kind==="stoneTerrain")rebuildStoneChunksNear(x,z);
+  else placedGroup.remove(info.mesh);
+  if(info.kind==="terrain")rebuildStoneChunksNear(x,z);
   saveWorld();return true;
  }
  if(change.action==="place"){
   const typeIndex=Number(change.typeIndex);
-  if(!Number.isInteger(typeIndex)||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z)||y<0||y>100)return false;
+  if(!Number.isInteger(typeIndex)||typeIndex<0||typeIndex>=blockTypes.length||getSolid(x,y,z)||y<=MIN_Y||y>100)return false;
   const type=blockTypes[typeIndex],mesh=new THREE.Mesh(cube,type.material);
   mesh.position.set(x,y+.5,z);
   const info={x,y,z,removed:false,kind:"placed",mesh,typeIndex};mesh.userData.blockInfo=info;
-  placedBlocks.push(info);addSolid(x,y,z,info);placedGroup.add(mesh);saveWorld();return true;
+  placedBlocks.push(info);addSolid(x,y,z,info);placedGroup.add(mesh);rebuildStoneChunksNear(x,z);saveWorld();return true;
  }
  return false;
 }
@@ -1650,20 +1879,26 @@ function removeSolidForCloudEdit(x,y,z){
  const key=key3(x,y,z),info=getSolid(x,y,z);
  if(info){
   info.removed=true;removeSolid(x,y,z);
-  if(info.kind==="terrain"){
-   removedTerrain.add(key);hideInstance(info.mesh,info.id);
+  if(["terrain","stoneTerrain","tree"].includes(info.kind)){
+   removedTerrain.add(key);
+   if(info.kind==="terrain"||info.kind==="tree")hideInstance(info.mesh,info.id);
+   else rebuildStoneChunksNear(x,z);
+   if(info.kind==="terrain")rebuildStoneChunksNear(x,z);
   }else placedGroup.remove(info.mesh);
  }
 }
 function hideCloudBaseTerrain(x,y,z){
- const key=key3(x,y,z),base=terrainCatalog.get(key);
- if(base){
+ const key=key3(x,y,z),base=terrainCatalog.get(key)||getSolid(x,y,z);
+ if(base&&["terrain","stoneTerrain","tree"].includes(base.kind)){
+  // 先に削除セットへ入れてから石チャンクを再構築する。
+  removedTerrain.add(key);
   if(!base.removed){
    base.removed=true;
-   if(getSolid(x,y,z)===base)removeSolid(x,y,z);
-   hideInstance(base.mesh,base.id);
+   removeSolid(x,y,z);
+   if(base.kind==="terrain"||base.kind==="tree")hideInstance(base.mesh,base.id);
+   else rebuildStoneChunksNear(x,z);
+   if(base.kind==="terrain")rebuildStoneChunksNear(x,z);
   }
-  removedTerrain.add(key);
  }
 }
 function applyCloudCellEdit(key,value){
@@ -1865,16 +2100,20 @@ document.addEventListener("mousedown",e=>{
  if(e.button!==0&&e.button!==2)return;
  if(e.target.closest("#hotbar,#start,#inventory,#networkHud"))return;
  if(e.button===2)rightMouseHeld=true;
+ if(e.button===0)leftMouseHeld=true;
  if(document.pointerLockElement!==renderer.domElement){
   renderer.domElement.requestPointerLock?.();
   return;
  }
- if(e.button===0)breakBlock();
+ if(e.button===0)beginBlockBreaking();
  if(e.button===2){placeBlock();lastHeldPlaceAt=performance.now();}
 });
-document.addEventListener("mouseup",e=>{if(e.button===2)rightMouseHeld=false;});
-document.addEventListener("pointerlockchange",()=>{if(document.pointerLockElement!==renderer.domElement)rightMouseHeld=false;});
-window.addEventListener("blur",()=>{rightMouseHeld=false;for(const key of Object.keys(keys))keys[key]=false;});
+document.addEventListener("mouseup",e=>{
+ if(e.button===2)rightMouseHeld=false;
+ if(e.button===0){leftMouseHeld=false;if(breakSession)clearBreaking();}
+});
+document.addEventListener("pointerlockchange",()=>{if(document.pointerLockElement!==renderer.domElement){rightMouseHeld=false;leftMouseHeld=false;clearBreaking();}});
+window.addEventListener("blur",()=>{rightMouseHeld=false;leftMouseHeld=false;clearBreaking();for(const key of Object.keys(keys))keys[key]=false;});
 
 function updatePlayer(dt){
  let forward=0,side=0;
@@ -1989,6 +2228,7 @@ function animate(now){
  updatePlayer(dt);
  updateCamera();
  updateAdventureWorld(dt,now);
+ updateBreaking(now);
  updateRemoteAvatars(dt);
  if(rightMouseHeld&&document.pointerLockElement===renderer.domElement&&startOverlay.style.display==="none"&&inventory.style.display!=="block"&&now-lastHeldPlaceAt>=HELD_PLACE_INTERVAL){
   lastHeldPlaceAt=now;placeBlock();
