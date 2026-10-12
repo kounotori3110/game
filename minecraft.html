@@ -56,9 +56,9 @@ canvas{display:block}
 <div id="networkHud"><span>ワールドコード：</span><b id="roomDisplay">-</b><button id="copyRoom" type="button">コピー</button></div>
 
 <div id="help">
-WASD：移動 / Space：ジャンプ / 一人称視点<br>
-左クリック：狙ったブロックを壊す<br>
-右クリック：選択ブロックを置く<br>
+WASD：移動 / Space長押し：連続ジャンプ / Shift：しゃがみ・落下防止<br>
+左クリック：ブロックを壊す<br>
+右クリック長押し：連続でブロックを置く<br>
 E：ブロック一覧 / 1〜9、0：選択
 </div>
 
@@ -92,7 +92,7 @@ E：ブロック一覧 / 1〜9、0：選択
   <div id="connectionMsg">クラウドを初めて使うときは、下の設定を行ってね。</div>
   <details id="firebaseSetup" style="margin-top:12px;text-align:left;background:#0004;border-radius:9px;padding:10px">
    <summary style="cursor:pointer;font-weight:bold">☁ 初回だけ：クラウド接続設定</summary>
-   <div class="note">この公開版にはMY BLOCK WORLD用のFirebase Web設定が組み込み済みだよ。通常の参加者は設定を入力しなくてOK！開発者が別のFirebaseプロジェクトへ切り替える場合だけ、ここを書き換えて「接続設定を保存」を押してね。秘密鍵やサービスアカウントのJSONは絶対に貼らないでね。</div>
+   <div class="note">Firebase Consoleで作った「ウェブアプリの設定オブジェクト」を貼り付けて保存してね。秘密鍵やサービスアカウントのJSONは絶対に貼らないでね。設定はこのブラウザに保存されるよ。</div>
    <label for="firebaseConfigInput">Firebase Web設定（JSONまたは firebaseConfig のオブジェクト）</label>
    <textarea id="firebaseConfigInput" rows="7" spellcheck="false" placeholder='{
   "apiKey": "...",
@@ -170,8 +170,10 @@ scene.background=new THREE.Color(0x87ceeb);
 scene.fog=new THREE.Fog(0x87ceeb,65,230);
 
 const camera=new THREE.PerspectiveCamera(70,innerWidth/innerHeight,.1,300);
-const renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+// 軽量化：アンチエイリアスを切り、描画解像度を控えめにして低スペックPCでも動きやすくする。
+const RENDER_PIXEL_RATIO=Math.min(window.devicePixelRatio||1,1.25);
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:"high-performance"});
+renderer.setPixelRatio(RENDER_PIXEL_RATIO);
 renderer.setSize(innerWidth,innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -501,6 +503,9 @@ scene.add(player);
 let px=0,pz=0,feet=1,vy=0,grounded=true;
 let yaw=0,pitch=0,jumpQueued=false;
 const keys=Object.create(null);
+let rightMouseHeld=false,lastHeldPlaceAt=0;
+const HELD_PLACE_INTERVAL=210;
+function isSneaking(){return !!(keys.ShiftLeft||keys.ShiftRight);}
 
 const placedBlocks=[];
 const placedGroup=new THREE.Group();
@@ -617,6 +622,19 @@ function collidesAt(x,z,bottom){
   }
  }
  return false;
+}
+
+// Shift中は足元の四隅が同じ高さのブロックに支えられている場所にだけ移動する。
+function hasFootingAt(x,z,feetY){
+ const supportY=Math.round(feetY)-1;
+ if(Math.abs(feetY-(supportY+1))>.18)return false;
+ const inset=.055,half=PLAYER_HALF-inset;
+ const points=[[x-half,z-half],[x-half,z+half],[x+half,z-half],[x+half,z+half]];
+ for(const [sx,sz] of points){
+  const gx=Math.floor(sx+.5),gz=Math.floor(sz+.5);
+  if(!inWorld(gx,gz)||!getSolid(gx,supportY,gz))return false;
+ }
+ return true;
 }
 
 // 射程を大幅に延長
@@ -967,11 +985,21 @@ function makeNameSprite(name){
  const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthTest:false}));
  sprite.scale.set(2.4,.6,1);sprite.position.y=2.45;sprite.renderOrder=10;return sprite;
 }
-function removeRemotePlayer(id){
- const av=remoteAvatars.get(id);if(!av)return;
- scene.remove(av.group);av.group.traverse(o=>{if(o.geometry&&o.userData&&o.userData.ownedGeometry)o.geometry.dispose();if(o.material&&o.userData&&o.userData.ownedMaterial)o.material.dispose();});
- remoteAvatars.delete(id);networkPlayerStates.delete(id);
+function disposeRemoteAvatar(id,clearState=true){
+ const av=remoteAvatars.get(id);
+ if(av){
+  scene.remove(av.group);
+  av.group.traverse(o=>{
+   if(o.isSprite&&o.material&&o.material.map)o.material.map.dispose();
+   if(o.geometry)o.geometry.dispose();
+   if(Array.isArray(o.material))o.material.forEach(m=>m&&m.dispose());
+   else if(o.material)o.material.dispose();
+  });
+  remoteAvatars.delete(id);
+ }
+ if(clearState)networkPlayerStates.delete(id);
 }
+function removeRemotePlayer(id){disposeRemoteAvatar(id,true);}
 function upsertRemotePlayer(id,state){
  if(!id||id===netPeer?.id||!state||!Number.isFinite(Number(state.x))||!Number.isFinite(Number(state.y))||!Number.isFinite(Number(state.z)))return;
  let av=remoteAvatars.get(id);
@@ -981,14 +1009,28 @@ function upsertRemotePlayer(id,state){
   const body=new THREE.Mesh(new THREE.BoxGeometry(.68,1,.42),new THREE.MeshStandardMaterial({color,roughness:.82}));body.position.y=.92;
   const head=new THREE.Mesh(new THREE.BoxGeometry(.48,.48,.48),new THREE.MeshStandardMaterial({color:0xf0c7a4,roughness:.9}));head.position.y=1.67;
   const label=makeNameSprite(state.name||"プレイヤー");
-  group.add(body,head,label);scene.add(group);av={group,label,name:state.name||"プレイヤー"};remoteAvatars.set(id,av);
+  const x=Number(state.x),y=Number(state.y),z=Number(state.z),yaw=Number(state.yaw)||0;
+  group.position.set(x,y,z);group.rotation.y=yaw;
+  group.add(body,head,label);scene.add(group);
+  av={group,label,name:state.name||"プレイヤー",targetX:x,targetY:y,targetZ:z,targetYaw:yaw};remoteAvatars.set(id,av);
  }else if(state.name&&state.name!==av.name){
   av.group.remove(av.label);if(av.label.material.map)av.label.material.map.dispose();av.label.material.dispose();
   av.label=makeNameSprite(state.name);av.group.add(av.label);av.name=state.name;
  }
- av.group.position.set(Number(state.x),Number(state.y),Number(state.z));
- av.group.rotation.y=Number(state.yaw)||0;
+ // 位置を瞬間移動させず目標位置として保存し、描画ループで補間する。
+ av.targetX=Number(state.x);av.targetY=Number(state.y);av.targetZ=Number(state.z);av.targetYaw=Number(state.yaw)||0;
  networkPlayerStates.set(id,{...state});
+}
+function updateRemoteAvatars(dt){
+ const alpha=1-Math.exp(-14*Math.min(dt,.06));
+ for(const av of remoteAvatars.values()){
+  const g=av.group;
+  g.position.x+=(av.targetX-g.position.x)*alpha;
+  g.position.y+=(av.targetY-g.position.y)*alpha;
+  g.position.z+=(av.targetZ-g.position.z)*alpha;
+  let delta=((av.targetYaw-g.rotation.y+Math.PI*3)%(Math.PI*2))-Math.PI;
+  g.rotation.y+=delta*alpha;
+ }
 }
 function handleHostMessage(conn,msg){
  if(!msg||typeof msg.type!=="string")return;
@@ -1043,7 +1085,7 @@ function networkTick(now){
   publishCloudPlayerState(now);
   return;
  }
- if(now-lastNetworkTick<100)return;
+ if(now-lastNetworkTick<150)return;
  lastNetworkTick=now;
  const state=getLocalNetworkState();
  if(netMode==="host"){
@@ -1110,27 +1152,14 @@ const saveFirebaseConfigButton=document.getElementById("saveFirebaseConfigBtn");
 const copyFirebaseRulesButton=document.getElementById("copyFirebaseRulesBtn");
 const firebaseRulesText=document.getElementById("firebaseRulesText");
 let cloudDb=null,cloudAuth=null,cloudUid=null,cloudRoomRef=null,cloudCellsRef=null,cloudPlayersRef=null;
-let cloudReady=false,cloudLastPlayerWrite=0;
+let cloudReady=false,cloudLastPlayerWrite=0,cloudLastPlayerStateSent=null;
 const cloudQueuedCellEvents=new Map();
 let cloudCellHandler=null,cloudPlayerAddedHandler=null,cloudPlayerChangedHandler=null,cloudPlayerRemovedHandler=null,cloudCustomBlocksHandler=null;
 
-// MY BLOCK WORLD 公開版のFirebase Web設定。Web設定なので秘密鍵ではない。
-// アクセス制御は必ず Firebase Realtime Database のセキュリティルールで行う。
-const DEFAULT_FIREBASE_CONFIG={
- apiKey:"AIzaSyDpP2yicQBpBaw9H7irG41p5QusKDo_Lls",
- authDomain:"minefun3110.firebaseapp.com",
- databaseURL:"https://minefun3110-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId:"minefun3110",
- storageBucket:"minefun3110.firebasestorage.app",
- messagingSenderId:"1006486721446",
- appId:"1:1006486721446:web:d1ca3aa986949466443567",
- measurementId:"G-SKM366F1XF"
-};
 try{
  const savedConfig=localStorage.getItem(FIREBASE_CONFIG_KEY);
- // 利用者が以前から保存している設定があれば尊重し、初回は公開版の設定を使う。
- firebaseConfigInput.value=JSON.stringify(savedConfig?JSON.parse(savedConfig):DEFAULT_FIREBASE_CONFIG,null,2);
-}catch(_){firebaseConfigInput.value=JSON.stringify(DEFAULT_FIREBASE_CONFIG,null,2);}
+ if(savedConfig)firebaseConfigInput.value=JSON.stringify(JSON.parse(savedConfig),null,2);
+}catch(_){}
 
 function parseFirebaseConfigText(){
  let raw=String(firebaseConfigInput.value||"").trim();
@@ -1324,9 +1353,14 @@ function handleCloudPlayerSnapshot(snap){
  upsertRemotePlayer(snap.key,state);
 }
 function publishCloudPlayerState(now){
- if(!cloudPlayersRef||!cloudUid||now-cloudLastPlayerWrite<250)return;
+ if(!cloudPlayersRef||!cloudUid||now-cloudLastPlayerWrite<350)return;
+ const prev=cloudLastPlayerStateSent;
+ const moved=!prev||Math.hypot(px-prev.x,pz-prev.z)>.09||Math.abs(feet-prev.y)>.08||Math.abs(((yaw-prev.yaw+Math.PI*3)%(Math.PI*2))-Math.PI)>.045;
+ // 動いているときは最大約3回/秒。停止中は2秒に1回だけ接続維持を書き込む。
+ if(!moved&&now-cloudLastPlayerWrite<2000)return;
  cloudLastPlayerWrite=now;
- const state={name:playerName,x:px,y:feet,z:pz,yaw,updatedAt:firebase.database.ServerValue.TIMESTAMP};
+ cloudLastPlayerStateSent={name:playerName,x:px,y:feet,z:pz,yaw};
+ const state={...cloudLastPlayerStateSent,updatedAt:firebase.database.ServerValue.TIMESTAMP};
  cloudPlayersRef.child(cloudUid).set(state).catch(err=>{
   console.warn("プレイヤー位置を同期できませんでした",err);
   networkStatus.textContent="クラウド通信エラー";
@@ -1449,15 +1483,18 @@ document.addEventListener("contextmenu",e=>e.preventDefault());
 
 document.addEventListener("mousedown",e=>{
  if(e.button!==0&&e.button!==2)return;
-
+ if(e.target.closest("#hotbar,#start,#inventory,#networkHud"))return;
+ if(e.button===2)rightMouseHeld=true;
  if(document.pointerLockElement!==renderer.domElement){
   renderer.domElement.requestPointerLock?.();
   return;
  }
-
  if(e.button===0)breakBlock();
- if(e.button===2)placeBlock();
+ if(e.button===2){placeBlock();lastHeldPlaceAt=performance.now();}
 });
+document.addEventListener("mouseup",e=>{if(e.button===2)rightMouseHeld=false;});
+document.addEventListener("pointerlockchange",()=>{if(document.pointerLockElement!==renderer.domElement)rightMouseHeld=false;});
+window.addEventListener("blur",()=>{rightMouseHeld=false;for(const key of Object.keys(keys))keys[key]=false;});
 
 function updatePlayer(dt){
  let forward=0,side=0;
@@ -1465,48 +1502,29 @@ function updatePlayer(dt){
  if(keys.KeyS||keys.ArrowDown)forward--;
  if(keys.KeyD||keys.ArrowRight)side++;
  if(keys.KeyA||keys.ArrowLeft)side--;
-
+ const sneaking=isSneaking()&&grounded;
+ const moveSpeed=SPEED*(sneaking ? 0.38 : 1);
  const len=Math.hypot(forward,side);
  if(len>0){
   forward/=len;side/=len;
-
-  const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*SPEED*dt;
-  const dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*SPEED*dt;
-
+  const dx=(-Math.sin(yaw)*forward+Math.cos(yaw)*side)*moveSpeed*dt;
+  const dz=(-Math.cos(yaw)*forward-Math.sin(yaw)*side)*moveSpeed*dt;
   const nx=px+dx;
-  if(inWorld(Math.floor(nx+.5),Math.floor(pz+.5))&&!collidesAt(nx,pz,feet))px=nx;
-
+  if(inWorld(Math.floor(nx+.5),Math.floor(pz+.5))&&!collidesAt(nx,pz,feet)&&(!sneaking||hasFootingAt(nx,pz,feet)))px=nx;
   const nz=pz+dz;
-  if(inWorld(Math.floor(px+.5),Math.floor(nz+.5))&&!collidesAt(px,nz,feet))pz=nz;
+  if(inWorld(Math.floor(px+.5),Math.floor(nz+.5))&&!collidesAt(px,nz,feet)&&(!sneaking||hasFootingAt(px,nz,feet)))pz=nz;
  }
-
  const ground=groundTopAt(px,pz,feet+.1);
-
- if(jumpQueued&&grounded){
-  vy=JUMP_POWER;
-  grounded=false;
- }
+ // Spaceを押しっぱなしなら、着地したフレームで次のジャンプを開始する。
+ if((jumpQueued||keys.Space)&&grounded){vy=JUMP_POWER;grounded=false;}
  jumpQueued=false;
-
  if(grounded&&feet>ground+.001)grounded=false;
-
- if(grounded){
-  feet=ground;
-  vy=0;
- }else{
-  const oldFeet=feet;
-  vy-=GRAVITY*dt;
-  const nextFeet=feet+vy*dt;
-
-  if(vy<=0&&nextFeet<=ground&&oldFeet>=ground-.01){
-   feet=ground;
-   vy=0;
-   grounded=true;
-  }else{
-   feet=nextFeet;
-  }
+ if(grounded){feet=ground;vy=0;}
+ else{
+  const oldFeet=feet;vy-=GRAVITY*dt;const nextFeet=feet+vy*dt;
+  if(vy<=0&&nextFeet<=ground&&oldFeet>=ground-.01){feet=ground;vy=0;grounded=true;}
+  else feet=nextFeet;
  }
-
  player.position.set(px,feet+PLAYER_HEIGHT/2,pz);
  posLabel.textContent=`${Math.round(px)}, ${Math.round(pz)}`;
 }
@@ -1514,7 +1532,7 @@ function updatePlayer(dt){
 // 一人称視点：カメラをプレイヤーの目の位置に置く。
 // yawは左右、pitchは上下。マウスを上に動かすと上を見る設定を維持。
 function updateCamera(){
- const eyeY=feet+PLAYER_EYE_HEIGHT;
+ const eyeY=feet+(isSneaking()?1.18:PLAYER_EYE_HEIGHT);
  camera.position.set(px,eyeY,pz);
  const lookX=px-Math.sin(yaw)*Math.cos(pitch);
  const lookY=eyeY+Math.sin(pitch);
@@ -1572,7 +1590,7 @@ window.addEventListener("resize",()=>{
  camera.aspect=innerWidth/innerHeight;
  camera.updateProjectionMatrix();
  renderer.setSize(innerWidth,innerHeight);
- renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+ renderer.setPixelRatio(RENDER_PIXEL_RATIO);
 });
 
 restoreWorld();
@@ -1587,6 +1605,10 @@ function animate(now){
  last=now;
  updatePlayer(dt);
  updateCamera();
+ updateRemoteAvatars(dt);
+ if(rightMouseHeld&&document.pointerLockElement===renderer.domElement&&startOverlay.style.display==="none"&&inventory.style.display!=="block"&&now-lastHeldPlaceAt>=HELD_PLACE_INTERVAL){
+  lastHeldPlaceAt=now;placeBlock();
+ }
  networkTick(now);
  renderer.render(scene,camera);
 }
