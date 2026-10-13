@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>セッ久</title>
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px 12px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #fff3df;
+  color: #553b2d;
+  font-family: Meiryo, sans-serif;
+  text-align: center;
+}
+
+.game { width: 100%; max-width: 520px; }
+
+h1 {
+  font-size: clamp(28px, 7vw, 40px);
+  margin: 0 0 8px;
+}
+
+.description { font-size: 15px; margin-bottom: 12px; }
+
+.stage {
+  position: relative;
+  width: 100%;
+  height: clamp(330px, 65vh, 470px);
+  min-height: 330px;
+  overflow: hidden;
+  border: 4px solid #e8d0ad;
+  border-radius: 24px;
+  background: #fff8ed;
+  box-shadow: 0 7px 0 #e3c7a2;
+  touch-action: none;
+  user-select: none;
+}
+
+.bubble {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 90%;
+  width: max-content;
+  padding: 12px 18px;
+  background: white;
+  border: 3px solid #e7b99d;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: clamp(15px, 4vw, 20px);
+  z-index: 5;
+}
+
+.bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  background: white;
+  border-right: 3px solid #e7b99d;
+  border-bottom: 3px solid #e7b99d;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.ball {
+  position: absolute;
+  left: 0;
+  width: clamp(54px, 15vw, 72px);
+  height: clamp(54px, 15vw, 72px);
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #ffb0ca, #ff7eaa);
+  border: 4px solid #e65f96;
+  box-shadow: inset -8px -9px 0 rgba(180,42,100,.12),
+    inset 7px 7px 0 rgba(255,255,255,.45), 0 7px 0 #e9a2bd;
+  z-index: 2;
+}
+
+.ball.left { left: 0; }
+
+.ball.right { right: 0; }
+
+.tool .ball.left {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: none;
+}
+.tool .ball.right {
+  left: 0;
+  right: auto;
+  top: auto;
+  bottom: 0;
+  transform: none;
+}
+
+.rod {
+  position: absolute;
+  left: 22%;
+  top: 50%;
+  width: 72%;
+  height: 46px;
+  transform: translateY(-50%);
+  border-radius: 22px;
+  background: linear-gradient(90deg, #956039 0%, #c58a52 24%, #e0b078 48%, #bd8048 72%, #87532f 100%);
+  border: 3px solid #87532f;
+  box-shadow: inset 4px 0 0 rgba(255,255,255,.2), 4px 5px 0 rgba(89,55,30,.15);
+  z-index: 1;
+}
+
+
+.tool {
+  position: absolute;
+  left: 4%;
+  bottom: 83px;
+  width: 57%;
+  height: clamp(130px, 32vw, 150px);
+  z-index: 5;
+  touch-action: none;
+  cursor: pointer;
+  transform-origin: 92% 50%;
+}
+.stage.hit .tool { animation: toolSwing .48s ease-in-out; }
+@keyframes toolSwing {
+  0%,100% { transform: rotate(0) translateX(0); }
+  25% { transform: rotate(-5deg) translateX(25px); }
+  55% { transform: rotate(4deg) translateX(-5px); }
+  78% { transform: rotate(-2deg) translateX(3px); }
+}
+
+/* 棒の先にある、肌色の玉を半分にした山ふたつ */
+.mountain-pair {
+  position: absolute;
+  left: 78%;
+  bottom: 125px;
+  width: clamp(126px, 38vw, 190px);
+  height: clamp(72px, 21vw, 100px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+.mountain {
+  position: relative;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(145deg, #f6d0ad 0%, #e0b078 70%, #d99b70 100%);
+  border: 3px solid #e65f96;
+  border-bottom: 0;
+  border-radius: 100% 100% 0 0;
+  box-shadow: inset 5px 5px 0 rgba(255,255,255,.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8d5c43;
+  font-size: clamp(12px, 3vw, 16px);
+  font-weight: bold;
+  text-shadow: 0 1px rgba(255,255,255,.5);
+  transition: transform .12s ease;
+}
+.mountain-left { transform-origin: 100% 100%; }
+.mountain-right { transform-origin: 0 100%; }
+.mountain span { display: none; }
+.stage.hit .mountain-left { animation: mountainLeft .48s ease-in-out; }
+.stage.hit .mountain-right { animation: mountainRight .48s ease-in-out; }
+@keyframes mountainLeft {
+  0%,100% { transform: rotate(0) scale(1); }
+  25% { transform: rotate(-13deg) scale(.94,1.05); }
+  55% { transform: rotate(7deg) scale(1.05,.95); }
+}
+@keyframes mountainRight {
+  0%,100% { transform: rotate(0) scale(1); }
+  25% { transform: rotate(13deg) scale(.94,1.05); }
+  55% { transform: rotate(-7deg) scale(1.05,.95); }
+}
+.floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 25px;
+  background: #efd8b6;
+  border-top: 3px solid #e3c7a2;
+}
+
+.stage.hit .ball { animation: jiggle .48s ease-in-out; }
+
+@keyframes flick {
+  0% { transform: translateX(-50%) rotate(0) translateX(0); }
+  25% { transform: translateX(-50%) rotate(-10deg) translateX(24px); }
+  55% { transform: translateX(-50%) rotate(5deg) translateX(-8px); }
+  78% { transform: translateX(-50%) rotate(-2deg) translateX(4px); }
+  100% { transform: translateX(-50%) rotate(0) translateX(0); }
+}
+
+@keyframes jiggle {
+  0%,100% { transform: translateX(0) scale(1); }
+  25% { transform: translateX(-5px) scale(1.05,.95); }
+  50% { transform: translateX(5px) scale(.96,1.04); }
+  75% { transform: translateX(-3px) scale(1.02,.98); }
+}
+
+.power-area {
+  margin: 24px auto 18px;
+  width: 92%;
+  text-align: left;
+}
+
+.power-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+#powerText { text-align: right; }
+
+.power-bar {
+  height: 28px;
+  border-radius: 14px;
+  background: #e6d8c6;
+  border: 2px solid #e3c7a2;
+  position: relative;
+  overflow: hidden;
+}
+
+.power-zone {
+  position: absolute;
+  left: 75%;
+  width: 25%;
+  height: 100%;
+  background: #7bd99b;
+  opacity: .9;
+}
+
+#powerFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0;
+  background: #ff982f;
+  border-radius: 12px;
+  pointer-events: none;
+}
+
+#powerMarker {
+  position: absolute;
+  left: 0;
+  top: -2px;
+  width: 5px;
+  height: 28px;
+  border-radius: 3px;
+  background: #553b2d;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.power-label.small {
+  margin-top: 7px;
+  font-size: 12px;
+  color: #866d58;
+}
+
+.power-label.small span:nth-child(2) {
+  color: #39794b;
+  font-weight: bold;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 20px 0 15px;
+  font-size: 19px;
+  font-weight: bold;
+}
+
+button {
+  border: none;
+  border-radius: 16px;
+  padding: 16px 28px;
+  min-height: 56px;
+  background: #ff982f;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  font-family: inherit;
+  box-shadow: 0 5px 0 #d86d16;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #d86d16;
+}
+
+@media (max-width: 360px) {
+  .stats { gap: 12px; font-size: 16px; }
+  .tool { width: 58%; left: 3%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage.hit .rod, .stage.hit .ball {
+    animation-duration: .01ms;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="game">
+  <h1>節句っす</h1>
+
+
+  <div class="stage" id="stage">
+    <div class="bubble" id="bubble">準備OK！</div>
+    <div class="tool" id="tool" role="button" tabindex="0" aria-label="棒と玉を長押し">
+      <div class="ball left" aria-label="玉"></div>
+      <div class="rod" id="rod"></div>
+      <div class="ball right" aria-label="玉"></div>
+    </div>
+    <div class="mountain-pair" id="mountains" aria-label="殴る山ふたつ">
+      <div class="mountain mountain-left"></div>
+      <div class="mountain mountain-right"></div>
+    </div>
+    <div class="floor"></div>
+  </div>
+
+  <div class="power-area">
+    <div class="power-label">
+      <span>ボン！パワー</span>
+      <span id="powerText">長押ししてね！</span>
+    </div>
+    <div class="power-bar">
+      <div class="power-zone"></div>
+      <div id="powerFill"></div>
+      <div id="powerMarker"></div>
+    </div>
+    <div class="power-label small">
+      <span>弱め</span>
+      <span>ベストゾーン！</span>
+      <span>強すぎ</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div>山ふたつを殴った回数：<span id="count">0</span></div>
+  </div>
+
+  <button id="flickButton" type="button">長押しでボン！</button>
+</main>
+
+<script>
+const stage = document.getElementById("stage");
+const rod = document.getElementById("rod");
+const tool = document.getElementById("tool");
+const bubble = document.getElementById("bubble");
+const countText = document.getElementById("count");
+const flickButton = document.getElementById("flickButton");
+const powerFill = document.getElementById("powerFill");
+const powerMarker = document.getElementById("powerMarker");
+const powerText = document.getElementById("powerText");
+
+let count = 0;
+let animationTimer = null;
+let pressStart = 0;
+let isPressing = false;
+let gaugeFrame = null;
+let activePointerId = null;
+
+const messages = {
+  weak: "あ、ん……っ",
+  medium: "あ゛ッ♡あ゛ッ♡♡そこは、でいっちゃ♡あ♡ん、う♡♡あ゛♡〜〜〜〜〜ッッッ♡♡♡♡！、！！",
+  strong: "あ゛ッ♡いい、かり゛ゃ♡わか、った♡あ゛ッ♡お゛ッッ♡また、いっちゃ、あ゛ッ♡お゛♡お゛♡〜〜〜〜〜〜〜ッッッ♡♡♡♡♡！、！！！"
+};
+
+function updateGauge() {
+  if (!isPressing) return;
+
+  const heldTime = Date.now() - pressStart;
+  const percent = Math.min(heldTime / 2000, 1) * 100;
+
+  powerFill.style.width = percent + "%";
+  powerMarker.style.left = percent + "%";
+
+  if (heldTime < 1500) {
+    powerText.textContent = "弱め";
+    powerFill.style.background = "#ff982f";
+  } else if (heldTime < 2000) {
+    powerText.textContent = "ベストゾーン！";
+    powerFill.style.background = "#35bd70";
+  } else {
+    powerText.textContent = "強くなりすぎ！";
+    powerFill.style.background = "#21864b";
+  }
+
+  gaugeFrame = requestAnimationFrame(updateGauge);
+}
+
+function startPress(event) {
+  if (event && event.type === "keydown" && event.repeat) return;
+  if (isPressing) return;
+
+  isPressing = true;
+  pressStart = Date.now();
+  activePointerId = event && "pointerId" in event
+    ? event.pointerId : null;
+
+  powerFill.style.width = "0%";
+  powerMarker.style.left = "0%";
+  powerFill.style.background = "#ff982f";
+  powerText.textContent = "パワー上昇中！";
+
+  if (gaugeFrame !== null) cancelAnimationFrame(gaugeFrame);
+  updateGauge();
+}
+
+function endPress() {
+  if (!isPressing) return;
+
+  const heldTime = Date.now() - pressStart;
+  isPressing = false;
+  activePointerId = null;
+
+  if (gaugeFrame !== null) {
+    cancelAnimationFrame(gaugeFrame);
+    gaugeFrame = null;
+  }
+
+  let strength;
+  if (heldTime < 1500) {
+    strength = "weak";
+  } else if (heldTime < 2000) {
+    strength = "medium";
+  } else {
+    strength = "strong";
+  }
+
+  flick(strength);
+}
+
+function flick(strength) {
+  count++;
+  countText.textContent = count;
+  bubble.textContent = messages[strength];
+
+  powerText.textContent =
+    strength === "medium" ? "ベスト！" :
+    strength === "weak" ? "弱め判定" : "強すぎ判定";
+
+  // 山から声が出る演出（端末・ブラウザの音声機能を使用）
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    const voice = new SpeechSynthesisUtterance(messages[strength]);
+    voice.lang = "ja-JP";
+    voice.rate = strength === "strong" ? 1.15 : 1;
+    voice.pitch = strength === "weak" ? 1.25 : strength === "medium" ? 1.05 : 0.9;
+    window.speechSynthesis.speak(voice);
+  }
+
+  powerFill.style.background =
+    strength === "medium" ? "#35bd70" :
+    strength === "weak" ? "#ff982f" : "#21864b";
+
+  stage.classList.remove("hit");
+  void stage.offsetWidth;
+  stage.classList.add("hit");
+
+  clearTimeout(animationTimer);
+  animationTimer = setTimeout(() => {
+    stage.classList.remove("hit");
+  }, 500);
+}
+
+function attachPointer(element) {
+  element.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    startPress(event);
+
+    try {
+      element.setPointerCapture(event.pointerId);
+    } catch (_) {}
+  });
+
+  element.addEventListener("pointerup", (event) => {
+    if (activePointerId !== null &&
+        event.pointerId !== activePointerId) return;
+    endPress();
+  });
+
+  element.addEventListener("pointercancel", endPress);
+
+  element.addEventListener("lostpointercapture", (event) => {
+    if (isPressing &&
+        (activePointerId === null ||
+         event.pointerId === activePointerId)) {
+      endPress();
+    }
+  });
+}
+
+attachPointer(flickButton);
+attachPointer(tool);
+
+function keyboardStart(event) {
+  if (event.code !== "Space" && event.code !== "Enter") return;
+  event.preventDefault();
+  startPress(event);
+}
+
+function keyboardEnd(event) {
+  if (event.code !== "Space" && event.code !== "Enter") return;
+  event.preventDefault();
+  endPress();
+}
+
+flickButton.addEventListener("keydown", keyboardStart);
+flickButton.addEventListener("keyup", keyboardEnd);
+tool.addEventListener("keydown", keyboardStart);
+tool.addEventListener("keyup", keyboardEnd);
+
+window.addEventListener("blur", () => {
+  if (isPressing) endPress();
+});
+</script>
+</body>
+</html>
