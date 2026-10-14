@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>ガチンコじゃんけん</title>
+<style>
+:root{--bg:#090817;--panel:#17142e;--line:#51417f;--text:#fbf8ff;--muted:#b5aed7;--pink:#ff4bc8;--cyan:#4cefff;--yellow:#ffe66d;--green:#70ffa5;--red:#ff627c}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at top,#27134e 0,#0b091d 60%,#060510 100%);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overscroll-behavior:none}body{padding:12px;display:flex;justify-content:center}button{font:inherit;cursor:pointer;touch-action:manipulation}.app{width:min(100%,650px);display:flex;flex-direction:column;gap:10px}.head{text-align:center;padding:3px 0}.logo{font-size:clamp(20px,5.5vw,34px);font-weight:1000;font-style:italic;letter-spacing:-1px;line-height:1;text-shadow:0 0 10px #ff39be,0 0 28px #8e43ff}.logo em{font-style:normal;color:var(--cyan)}.sub{font-size:11px;color:#c9c2e8;letter-spacing:2px;font-weight:900;margin-top:5px}.hud{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}.stat{padding:8px 6px;border:1px solid var(--line);border-radius:13px;text-align:center;background:linear-gradient(145deg,#211a40,#100e25);box-shadow:inset 0 1px #ffffff12}.lab{font-size:10px;font-weight:900;color:var(--muted);letter-spacing:1px}.value{font-size:clamp(19px,5vw,27px);font-weight:1000;line-height:1.2;font-variant-numeric:tabular-nums}.pink{color:var(--pink)}.cyan{color:var(--cyan)}.yellow{color:var(--yellow)}.arena{position:relative;border:1px solid #604b9c;border-radius:18px;padding:12px;background:linear-gradient(155deg,#211840,#110e28 65%,#0b0a1c);box-shadow:0 12px 35px #0008,inset 0 0 25px #743fff10;overflow:hidden}.combatants{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fighter{padding:10px;border-radius:14px;background:#09081788;border:1px solid #403363;min-width:0}.fighter .kind{font-size:10px;color:#bdb4e5;font-weight:900;letter-spacing:1px}.fighter .name{font-size:clamp(17px,4vw,22px);font-weight:1000;margin:1px 0 5px}.portrait{height:75px;display:grid;place-items:center;font-size:clamp(45px,12vw,67px);filter:drop-shadow(0 0 10px #a34bff77);position:relative}.player .portrait{filter:drop-shadow(0 0 12px #29eaff80)}.hptext{display:flex;justify-content:space-between;font-size:11px;font-weight:900;margin:7px 0 4px}.bar{height:10px;border-radius:20px;padding:2px;background:#080716;border:1px solid #43345f;overflow:hidden}.fill{height:100%;border-radius:12px;width:100%;transition:width .22s}.playerfill{background:linear-gradient(90deg,#2ec7ff,#70fff0);box-shadow:0 0 8px #46eaff88}.enemyfill{background:linear-gradient(90deg,#ff3b9e,#ff7770);box-shadow:0 0 8px #ff3b9e88}.tell{margin-top:10px;padding:10px;border-radius:12px;border:1px solid #66509c;background:linear-gradient(100deg,#231943,#13112b);display:flex;align-items:center;gap:10px}.tell .sig{font-size:30px;min-width:36px;text-align:center}.tell .tlabel{font-size:10px;color:#b9b2dd;font-weight:900;letter-spacing:1px}.tell .tmain{font-size:15px;font-weight:1000}.tell .tinfo{font-size:11px;color:#cec7ec;margin-top:1px}.tell.attack{border-color:#a54b67}.tell.guard{border-color:#416caa}.tell.feint{border-color:#9e54c9}.tell.charge{border-color:#b88635}.log{min-height:48px;padding:9px 10px;border-radius:11px;background:#080716a8;border:1px solid #30274d;font-size:13px;line-height:1.45;color:#ded8f6}.log b{color:var(--yellow)}.sectionlabel{font-size:10px;letter-spacing:1.5px;color:#aaa2d1;font-weight:1000;margin:1px 0 0 3px}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.move{min-height:76px;text-align:left;padding:10px 11px;border:1px solid #5e4a8d;border-radius:14px;background:linear-gradient(150deg,#27204a,#15112e);color:white;box-shadow:0 4px 0 #070615;position:relative;overflow:hidden}.move:active{transform:translateY(3px);box-shadow:0 1px 0 #070615}.move:disabled{opacity:.36;filter:grayscale(.7);cursor:not-allowed}.move .top{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:1000}.move .icon{font-size:25px}.move small{display:block;color:#c1b9e4;font-size:11px;line-height:1.4;margin-top:3px}.move.attack{border-color:#bb477e}.move.guard{border-color:#3d9fbc}.move.feint{border-color:#9e65d5}.move.charge{border-color:#b18b3c}.move.nova{grid-column:1/-1;min-height:58px;background:linear-gradient(100deg,#9c2de1,#fa3caa,#ff8a3c);border-color:#ffd6f8;box-shadow:0 4px 0 #512074,0 0 18px #dc35ff3b}.move.nova .top{justify-content:center}.move.nova small{text-align:center}.move.nova:disabled{opacity:.3;filter:grayscale(1)}.meterline{display:flex;justify-content:space-between;font-size:11px;font-weight:900;color:#d4cdf0;margin:2px 2px 4px}.meter{height:9px;border-radius:20px;background:#090716;border:1px solid #4b3973;padding:1px;overflow:hidden}.meterfill{height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#6d58ff,#ff4bc8,#ffe875);box-shadow:0 0 9px #ff4bc8;transition:width .2s}.upgrade-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.upgrade{border:1px solid #6b559d;background:linear-gradient(155deg,#2b2051,#130f29);color:#fff;border-radius:13px;padding:10px 7px;text-align:center;min-height:116px}.upgrade .uico{font-size:27px}.upgrade strong{display:block;font-size:12px;margin:3px 0}.upgrade small{display:block;font-size:10px;color:#c8c0e6;line-height:1.45}.hidden{display:none!important}.overlay{position:absolute;z-index:9;inset:0;border-radius:17px;padding:20px;background:#080716ed;display:flex;align-items:center;justify-content:center;text-align:center;backdrop-filter:blur(4px)}.modal{width:min(100%,410px)}.modal h1{font-size:clamp(30px,8vw,48px);font-weight:1000;line-height:1;margin:0 0 11px;text-shadow:0 0 20px #ff39be}.modal p{color:#d1caec;font-size:14px;line-height:1.65;margin:10px 0 18px}.bigbtn{border:1px solid #ffd3f4;border-radius:14px;padding:13px 20px;width:100%;font-size:17px;font-weight:1000;color:white;background:linear-gradient(105deg,#ff36b9,#9a3aff,#3d9dff);box-shadow:0 5px 0 #381860,0 0 20px #d33aff55}.bigbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #381860}.scorebig{font-size:46px;font-weight:1000;color:var(--yellow);text-shadow:0 0 18px #ff9b38}.chip{display:inline-block;border:1px solid #7057a4;border-radius:99px;padding:4px 8px;color:#e4dcff;font-size:11px;font-weight:900;margin:2px}.poptext{position:absolute;z-index:8;pointer-events:none;font-size:24px;font-weight:1000;color:#fff;text-shadow:0 0 8px #ff4bc8,0 3px #5030a9;animation:pop .85s ease-out forwards}.shake{animation:shake .24s linear}@keyframes pop{0%{opacity:0;transform:translate(-50%,0) scale(.5)}15%{opacity:1;transform:translate(-50%,-10px) scale(1.25)}100%{opacity:0;transform:translate(-50%,-60px) scale(.9)}}@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}.foot{text-align:center;color:#746c9b;font-size:10px;padding:0 0 8px}.note{font-size:11px;color:#a9a1d0;line-height:1.5;text-align:center}.comboBadge{color:var(--yellow);font-weight:1000}@media(min-width:560px){.app{gap:12px}.arena{padding:15px}.portrait{height:88px}.actions{grid-template-columns:repeat(3,minmax(0,1fr))}.move.nova{grid-column:1/-1}.upgrade{min-height:128px}}
+.music-toggle{position:relative;z-index:12;display:block;margin:9px auto 0;border:1px solid #ff4bc8;border-radius:999px;padding:6px 13px;background:linear-gradient(100deg,#33144f,#132b48);color:#fff;font-size:11px;font-weight:1000;letter-spacing:.6px;box-shadow:0 0 15px #ff4bc833}.music-toggle.is-off{border-color:#63577d;color:#a8a0c7;box-shadow:none}
+
+/* Tactical upgrade effects */
+.move.heavy{border-color:#ff9855;background:linear-gradient(150deg,#492b35,#21142e)}.tell.heavy{border-color:#ff9855}
+.move.parry{border-color:#5dffe2;background:linear-gradient(150deg,#143e4c,#16142f)}
+.move .cost{font-size:9px;border:1px solid #ffffff38;border-radius:5px;padding:2px 5px;margin-left:auto;color:#ffe66d}
+.statusline{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.statuschip{font-size:10px;font-weight:900;padding:4px 7px;border-radius:8px;background:#0a0819;border:1px solid #453663;color:#e7e0ff}
+.statuschip.hot{border-color:#ff4bc8;color:#ff9be3;box-shadow:0 0 10px #ff4bc833}
+.statuschip.good{border-color:#4cefff;color:#8ff8ff}
+.combo-wrap{margin-top:9px;padding:9px 10px;border-radius:12px;background:linear-gradient(100deg,#251331,#12102a);border:1px solid #724389}
+.combohead{display:flex;justify-content:space-between;align-items:center;font-size:11px;font-weight:1000;margin-bottom:5px}
+.combofill{height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#7c4dff,#ff4bc8,#ffe875);box-shadow:0 0 10px #ff4bc8;transition:width .2s}
+.combo-meter{height:8px;border-radius:20px;background:#090716;border:1px solid #4b3973;padding:1px;overflow:hidden}
+.historyline{margin-top:7px;font-size:10px;color:#aea4d5;line-height:1.4}
+.burst{animation:burst .3s ease-out}
+@keyframes burst{0%{filter:brightness(1)}45%{filter:brightness(1.75);box-shadow:0 0 32px #ff4bc8}100%{filter:brightness(1)}}
+.rarity{font-size:9px;letter-spacing:1px;color:#ffe66d;font-weight:1000}
+@media(max-width:380px){.hud{gap:4px}.stat{padding:7px 2px}.lab{font-size:9px}.value{font-size:18px}.fighter{padding:7px}.move{padding:9px 8px}.move .top{font-size:14px}.move .icon{font-size:22px}}
+</style>
+</head>
+<body>
+<main class="app" id="app">
+ <header class="head"><div class="logo">ガチンコじゃんけん</div><div class="sub">読み合いで勝ち抜け！</div><button id="musicToggle" class="music-toggle" type="button" aria-label="BGM on/off" aria-pressed="true">♫ BGM ON</button></header>
+ <section class="hud">
+  <div class="stat"><div class="lab">WINS</div><div class="value yellow" id="wins">0</div></div>
+  <div class="stat"><div class="lab">STREAK</div><div class="value pink" id="streak">0</div></div>
+  <div class="stat"><div class="lab">COMBO</div><div class="value" style="color:#ff9bf0" id="comboCount">0</div></div>
+  <div class="stat"><div class="lab">RANK</div><div class="value cyan" id="rank">ROOKIE</div></div>
+ </section>
+ <section class="arena" id="arena">
+  <div class="combatants">
+   <div class="fighter player"><div class="kind">YOU / PLAYER</div><div class="name">NEON KID</div><div class="portrait" id="playerEmoji">🧑‍🚀</div><div class="hptext"><span>HP</span><span id="playerHpText">100 / 100</span></div><div class="bar"><div class="fill playerfill" id="playerHpBar"></div></div></div>
+   <div class="fighter enemy"><div class="kind" id="enemyKind">RIVAL / 01</div><div class="name" id="enemyName">ゴリ押しゴーレム</div><div class="portrait" id="enemyEmoji">🤖</div><div class="hptext"><span>HP</span><span id="enemyHpText">68 / 68</span></div><div class="bar"><div class="fill enemyfill" id="enemyHpBar"></div></div></div>
+  </div>
+  <div class="tell attack" id="tell"><div class="sig" id="tellIcon">⚠️</div><div><div class="tlabel">ENEMY PROFILE / 相手の戦闘スタイル</div><div class="tmain" id="tellMain">相手のクセを観察しろ！</div><div class="tinfo" id="tellInfo">敵ごとに使いやすい手が違う。</div></div></div>
+  <div style="height:8px"></div>
+  <div class="log" id="log" aria-live="polite">敵のクセを見極めて、次の手を読もう。ボスの行動は予測不能！</div>
+  <div style="height:9px"></div>
+  <div class="meterline"><span>🔋 NOVAチャージ</span><span id="energyText">0 / 4ターン</span></div><div class="meter"><div class="meterfill" id="energyBar"></div></div>
+  <div class="combo-wrap"><div class="combohead"><span>🔥 HYPE COMBO</span><span id="comboText">0 / 5 · FEVERまであと5</span></div><div class="combo-meter"><div class="combofill" id="comboBar"></div></div><div class="statusline" id="statusLine"><span class="statuschip">読み勝ちでコンボUP</span><span class="statuschip">クセを見せると対策される</span></div></div>
+  <div class="historyline" id="historyLine">自分の直近の手：まだデータなし</div>
+ </section>
+ <div class="sectionlabel" id="actionTitle">YOUR MOVE / 行動を選べ！</div>
+ <section class="actions" id="actions">
+  <button class="move attack" data-move="attack"><div class="top"><span class="icon">👊</span>攻撃</div><small>強撃に勝つ。速くて安定した一撃。</small></button>
+  <button class="move heavy" data-move="heavy"><div class="top"><span class="icon">💥</span>強撃</div><small>ガードに勝つ。高威力だが攻撃に弱い。</small></button>
+  <button class="move guard" data-move="guard"><div class="top"><span class="icon">🛡️</span>ガード</div><small>攻撃に勝つ。重撃を受けると崩される。</small></button>
+  <button class="move nova" data-move="nova" id="novaBtn" disabled><div class="top"><span class="icon">💥</span> NOVA BLAST — 必殺技</div><small id="novaInfo">通常の行動を4ターンすると使用可能。相手の手に関係なくダメージ！</small></button>
+ </section>
+ <section id="reward" class="hidden"><div class="sectionlabel">WIN REWARD / 強化を選べ！</div><div class="upgrade-grid" id="upgrades"></div></section>
+ <div class="note" id="hint">相性：👊攻撃 ＞ 💥強撃 ＞ 🛡️ガード ＞ 👊攻撃。相性負けは約40ダメージ。同じ手なら小さな相打ち。必殺技は4ターンで使用可能。</div>
+ <footer>1ファイル完結 · メモ帳で編集OK · 遊ぶたび展開が変わる</footer>
+ <div class="overlay" id="overlay"><div class="modal" id="modal"><h1>ガチンコ<br>じゃんけん</h1><p>相手のクセを読んで連勝を狙う戦術ローグライト。<br><b>👊 攻撃 ＞ 💥 強撃 ＞ 🛡️ ガード ＞ 👊 攻撃</b><br><br>敵ごとに「攻撃が多い」「ガードが少ない」などの特徴がある。弱点を読んで勝利し、強化を選ぼう。通常行動を4ターンすると必殺技が使用可能！</p><button class="bigbtn" id="startBtn">ARE YOU READY? ▶</button><p style="font-size:11px;margin-bottom:0">相性負けすると大ダメージ！ ボスは何を出すか分からない。</p></div></div>
+</main>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const enemyDefs=[
+ {name:'ゴリ押しゴーレム',emoji:'🤖',kind:'RIVAL / BRUISER',style:'rush',hp:66,desc:'攻撃をよく使う。ガードはあまりしない。'},
+ {name:'ガード番長',emoji:'🦾',kind:'RIVAL / GUARDIAN',style:'guard',hp:76,desc:'ガードをよく使う。強撃は少なめ。'},
+ {name:'トリックラビット',emoji:'🐰',kind:'RIVAL / TRICKSTER',style:'trick',hp:64,desc:'3つの手をまんべんなく使う。読み切るのは難しい。'},
+ {name:'チャージドラゴン',emoji:'🐲',kind:'RIVAL / POWER',style:'power',hp:82,desc:'強撃をよく使う。攻撃は少なめ。'},
+ {name:'ミラーナイト',emoji:'🪞',kind:'RIVAL / ADAPTIVE',style:'mirror',hp:76,desc:'こちらが前のターンで使った手に対策することがある。'},
+ {name:'ネオン・ボス',emoji:'👾',kind:'BOSS / OVERDRIVE',style:'boss',hp:122,desc:'何を出してくるかわからない。クセが読めないボス。'},
+ {name:'サイコ・ジャッカル',emoji:'🐺',kind:'ELITE / HUNTER',style:'hunter',hp:88,desc:'攻撃と強撃をよく使い、ガードは少なめ。'}
+];
+const moveNames={attack:'攻撃',heavy:'強撃',guard:'ガード',nova:'NOVA BLAST'};
+let state={running:false,waiting:false,playerHp:100,maxHp:100,enemyHp:66,enemyMax:66,energy:0,specialCharge:0,wins:0,streak:0,round:0,turn:0,enemy:null,lastPlayer:null,lastMoves:[],enemyExposed:0,combo:0,comboPeak:0,winsTotal:0,score:0,upgrades:{attack:0,heavy:0,armor:0,heal:0,read:0,cooldown:0,feint:0,parry:0,combo:0,drain:0,crit:0}};
+function rnd(a){return a[Math.floor(Math.random()*a.length)]}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function setLog(html){$('log').innerHTML=html}
+function getSpecialTurns(){return Math.max(2,4-(state.upgrades.cooldown||0))}
+function setButtons(on){document.querySelectorAll('[data-move]').forEach(b=>b.disabled=!on||(b.dataset.move==='nova'&&state.specialCharge<getSpecialTurns()))}
+function rank(){return state.wins>=12?'MYTHIC':state.wins>=8?'DIAMOND':state.wins>=5?'GOLD':state.wins>=3?'SILVER':'ROOKIE'}
+function updateHUD(){
+ $('wins').textContent=state.wins;$('streak').textContent=state.streak;$('rank').textContent=rank();$('comboCount').textContent=state.combo;
+ $('playerHpText').textContent=Math.ceil(state.playerHp)+' / '+state.maxHp;$('playerHpBar').style.width=(100*state.playerHp/state.maxHp)+'%';
+ $('enemyHpText').textContent=Math.ceil(state.enemyHp)+' / '+state.enemyMax;$('enemyHpBar').style.width=(100*state.enemyHp/state.enemyMax)+'%';
+ const needed=getSpecialTurns(),charge=Math.min(state.specialCharge,needed);
+ $('energyText').textContent=charge>=needed?'READY!':'あと '+(needed-charge)+'ターン';$('energyBar').style.width=(100*charge/needed)+'%';
+ $('comboText').textContent=state.combo+' / 5 · '+(state.combo>=5?'🔥 FEVER READY!':'FEVERまであと '+(5-state.combo));$('comboBar').style.width=(Math.min(5,state.combo)/5*100)+'%';
+ $('comboBar').style.background=state.combo>=5?'linear-gradient(90deg,#ff4bc8,#ffe875)':'linear-gradient(90deg,#7c4dff,#ff4bc8,#ffe875)';
+ $('novaBtn').disabled=!state.running||state.waiting||state.specialCharge<getSpecialTurns();
+ const chips=[];if(state.combo>=5)chips.push('<span class="statuschip hot">🔥 FEVER READY · 次の勝ちで爆発！</span>');if(state.enemyExposed>0)chips.push('<span class="statuschip hot">💥 敵が無防備 · 次の攻撃UP</span>');if(state.upgrades.drain>0)chips.push('<span class="statuschip good">🧛 吸収 Lv.'+state.upgrades.drain+'</span>');if(state.upgrades.cooldown>0)chips.push('<span class="statuschip good">🔋 必殺技チャージ短縮 Lv.'+state.upgrades.cooldown+'</span>');if(!chips.length)chips.push('<span class="statuschip">👊 攻撃 ＞ 💥 強撃</span><span class="statuschip">💥 強撃 ＞ 🛡️ ガード</span><span class="statuschip">🛡️ ガード ＞ 👊 攻撃</span>');$('statusLine').innerHTML=chips.join('');
+ $('historyLine').textContent='自分の直近の手：'+(state.lastMoves.slice(-4).map(m=>moveNames[m]||m).join(' → ')||'まだなし')+' · ターン '+state.turn;
+}
+function updateTell(){const e=state.enemy;const meta={rush:{icon:'👊',klass:'attack',main:'攻撃が多いタイプ'},guard:{icon:'🛡️',klass:'guard',main:'ガードが多いタイプ'},trick:{icon:'🎭',klass:'feint',main:'気まぐれタイプ'},power:{icon:'💥',klass:'heavy',main:'強撃が多いタイプ'},mirror:{icon:'🪞',klass:'guard',main:'こちらに合わせるタイプ'},hunter:{icon:'🐺',klass:'heavy',main:'攻撃と強撃が多いタイプ'},boss:{icon:'❔',klass:'charge',main:'行動パターン不明！'}};const m=e?(meta[e.style]||meta.trick):{icon:'🔎',klass:'attack',main:'相手のクセを観察しろ！'};$('tell').className='tell '+m.klass;$('tellIcon').textContent=m.icon;$('tellMain').textContent=m.main;$('tellInfo').textContent=e?e.desc:'敵ごとに使いやすい手が違う。';}
+function showPop(text,el=$('arena')){const r=el.getBoundingClientRect(),p=document.createElement('div');p.className='poptext';p.textContent=text;p.style.left=(r.width*(.2+Math.random()*.6))+'px';p.style.top=(r.height*.45)+'px';el.appendChild(p);setTimeout(()=>p.remove(),900)}
+function counterOf(m){return {attack:'guard',guard:'heavy',heavy:'attack'}[m]||'guard'}
+function pickTell(){updateTell()}
+function actualEnemyMove(){
+ const e=state.enemy;
+ if(!e)return rnd(['attack','heavy','guard']);
+ if(e.style==='rush')return rnd(['attack','attack','attack','attack','heavy','heavy','guard']);
+ if(e.style==='guard')return rnd(['guard','guard','guard','guard','attack','heavy']);
+ if(e.style==='trick')return rnd(['attack','attack','heavy','heavy','guard','guard']);
+ if(e.style==='power')return rnd(['heavy','heavy','heavy','heavy','attack','attack','guard']);
+ if(e.style==='mirror'&&state.lastPlayer&&Math.random()<.62)return counterOf(state.lastPlayer);
+ if(e.style==='mirror')return rnd(['attack','heavy','guard']);
+ if(e.style==='hunter')return rnd(['attack','attack','attack','heavy','heavy','heavy','guard']);
+ // Boss: no readable tell and no strong bias; every hand stays possible.
+ return rnd(['attack','heavy','guard']);
+}
+function startBattle(){
+ state.round++;state.turn=0;state.waiting=false;state.running=true;state.enemyExposed=0;state.lastPlayer=null;
+ let def;if(state.round%4===0)def=enemyDefs[5];else if(state.round%7===0)def=enemyDefs[6];else def=rnd(enemyDefs.filter(e=>e.style!=='boss'));
+ const scale=1+Math.max(0,state.round-1)*.085;
+ state.enemy={...def};state.enemyMax=Math.round(def.hp*scale);state.enemyHp=state.enemyMax;
+ if(state.round>1)state.playerHp=Math.min(state.maxHp,state.playerHp+Math.min(28,17+state.upgrades.heal*4));
+ $('enemyName').textContent=def.name;$('enemyEmoji').textContent=def.emoji;$('enemyKind').textContent=def.kind+' / '+String(state.round).padStart(2,'0');
+ $('reward').classList.add('hidden');$('actionTitle').textContent='YOUR MOVE / 行動を選べ！';$('hint').textContent='相性：👊攻撃 ＞ 💥強撃 ＞ 🛡️ガード ＞ 👊攻撃。同じ手は相打ち。通常行動を4ターンすると必殺技が使える！';
+ pickTell();setLog('<b>ROUND '+state.round+(state.round%4===0?' · BOSS ROUND':'')+'</b> — '+def.name+'が現れた！ <b>相手の戦闘スタイル：</b>'+def.desc);setButtons(true);updateHUD();
+}
+function playerBeats(p,e){return (p==='attack'&&e==='heavy')||(p==='heavy'&&e==='guard')||(p==='guard'&&e==='attack')}
+function damageEnemy(n){n=Math.max(0,Math.round(n));const dealt=Math.min(state.enemyHp,n);state.enemyHp=Math.max(0,state.enemyHp-dealt);state.score+=dealt;return dealt}
+function damagePlayer(n){const dealt=Math.min(state.playerHp,Math.max(0,Math.round(n-(state.upgrades.armor?state.upgrades.armor*2:0))));state.playerHp=Math.max(0,state.playerHp-dealt);return dealt}
+function hitSfx(type){try{if(!ensureMusic())return;const ac=musicCtx,t=ac.currentTime+.005;const o=ac.createOscillator(),g=ac.createGain();o.type=type==='win'?'triangle':'sawtooth';o.frequency.setValueAtTime(type==='win'?390:type==='tie'?180:125,t);o.frequency.exponentialRampToValueAtTime(type==='win'?1050:type==='tie'?110:55,t+.13);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(type==='win'?.11:.075,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.16);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+.18)}catch(e){}}
+function action(move){
+ if(!state.running||state.waiting)return;
+ if(move==='nova'&&state.specialCharge<getSpecialTurns())return;
+ state.waiting=true;setButtons(false);state.turn++;
+ const actual=actualEnemyMove();let ed=0,pd=0,msg='';
+ if(move==='nova')state.specialCharge=0;else state.specialCharge=Math.min(getSpecialTurns(),state.specialCharge+1);
+ const oldCombo=state.combo,wasExposed=state.enemyExposed>0;state.enemyExposed=0;
+ if(move==='nova'){
+   const dmgBase=40+state.upgrades.attack*3+Math.min(oldCombo,8)*2;
+   let dmg=dmgBase;if(oldCombo>=5)dmg=Math.round(dmg*1.5);if(wasExposed)dmg=Math.round(dmg*1.25);
+   ed=damageEnemy(dmg);state.combo=Math.min(12,state.combo+1);state.comboPeak=Math.max(state.comboPeak,state.combo);
+   msg='💥 <b>NOVA BLAST!!</b> 相手の手に関係なく '+ed+'ダメージ！';showPop('NOVA!!');$('arena').classList.add('burst');setTimeout(()=>$('arena').classList.remove('burst'),320);hitSfx('win');
+ } else if(move===actual){
+   const chip=damagePlayer(4),chipE=damageEnemy(4);state.combo=Math.max(0,state.combo-1);msg='💥 <b>相打ち！</b> 同じ手がぶつかった！ お互い '+chip+' / '+chipE+'ダメージ。';hitSfx('tie');showPop('CLASH!');
+ } else if(playerBeats(move,actual)){
+   let dmg=move==='heavy'?27+state.upgrades.heavy*5:move==='guard'?17+state.upgrades.parry*4:20+state.upgrades.attack*4;
+   dmg+=Math.min(state.round,10)+state.upgrades.read*3;
+   dmg=Math.round(dmg*(1+Math.min(oldCombo,5)*.05+state.upgrades.combo*.04));
+   if(oldCombo>=5){dmg=Math.round(dmg*1.55);state.combo=0;msg='🔥 <b>FEVER CRITICAL!!</b> ';showPop('FEVER!!')}
+   else{state.combo=Math.min(12,state.combo+1);state.comboPeak=Math.max(state.comboPeak,state.combo);msg=''}
+   if(wasExposed)dmg=Math.round(dmg*1.25);
+   ed=damageEnemy(dmg);
+   msg+='✅ <b>相性勝ち！</b> '+moveNames[move]+' が '+moveNames[actual]+' を破った！ '+ed+'ダメージ！';
+   if(move==='heavy')showPop('HEAVY HIT!');else if(move==='guard')showPop('COUNTER!');else showPop('WIN!');hitSfx('win');
+ } else {
+   let hurt=40+Math.min(Math.max(0,state.round-1),8)+(state.enemy.style==='boss'?5:0);
+   pd=damagePlayer(hurt);state.combo=0;msg='💥 <b>相性負け！</b> '+moveNames[actual]+' が '+moveNames[move]+' に勝った！ '+pd+'ダメージを受けた。';hitSfx('lose');showPop('LOSE!');
+ }
+ if(state.upgrades.drain&&ed>0){const heal=Math.min(state.maxHp-state.playerHp,Math.floor(ed*.06*state.upgrades.drain));if(heal>0){state.playerHp+=heal;msg+=' <span style="color:#79ffbb">吸収 +'+heal+'HP！</span>'}}
+ state.lastPlayer=move;state.lastMoves.push(move);if(state.lastMoves.length>6)state.lastMoves.shift();
+ if(state.enemyHp<=0){enemyDefeatSfx();updateHUD();setLog(msg+'<br><b style="color:#ffe66d">K.O.!! 撃破！</b>');showPop('K.O.!!');setTimeout(winBattle,650);return}
+ if(state.playerHp<=0){updateHUD();setLog(msg+'<br><b style="color:#ff6b87">DOWN…</b> 連勝が途切れた！');setTimeout(loseBattle,650);return}
+ updateHUD();setLog(msg+'<br><span style="color:#aaa0d4">相性：攻撃＞強撃、強撃＞ガード、ガード＞攻撃。相性負けのダメージは重いので、敵のクセを読もう。</span>');
+ setTimeout(()=>{if(!state.running)return;pickTell();state.waiting=false;setButtons(true);updateHUD()},430);
+}
+const upgradePool=[
+ {id:'attack',icon:'👊',name:'攻撃オーバークロック',rarity:'COMMON',desc:'攻撃の勝ちダメージ+4。',apply:()=>state.upgrades.attack++},
+ {id:'heavy',icon:'💥',name:'強撃ブースター',rarity:'COMMON',desc:'強撃の勝ちダメージ+5。',apply:()=>state.upgrades.heavy++},
+ {id:'armor',icon:'🛡️',name:'チタン皮膜',rarity:'COMMON',desc:'受けるダメージを2軽減。',apply:()=>state.upgrades.armor++},
+ {id:'heal',icon:'💊',name:'ナノ修復',rarity:'RARE',desc:'HPを30回復。次戦の回復も増える。',apply:()=>{state.playerHp=Math.min(state.maxHp,state.playerHp+30);state.upgrades.heal++}},
+ {id:'read',icon:'🧠',name:'戦闘分析チップ',rarity:'RARE',desc:'相性勝ちの与ダメージ+3。',apply:()=>state.upgrades.read++},
+ {id:'cooldown',icon:'🔋',name:'チャージ効率UP',rarity:'RARE',desc:'必殺技に必要なターンを1つ短縮（最短2ターン）。',apply:()=>{state.upgrades.cooldown++}},
+ {id:'parry',icon:'✨',name:'ガード・カウンター',rarity:'EPIC',desc:'ガードで勝ったとき+4ダメージ。',apply:()=>state.upgrades.parry++},
+ {id:'combo',icon:'🔥',name:'ハイプ・エンジン',rarity:'EPIC',desc:'コンボ中のダメージがさらに上がる。',apply:()=>state.upgrades.combo++},
+ {id:'drain',icon:'🧛',name:'ライフスティール',rarity:'EPIC',desc:'与ダメージの6%をHP吸収。',apply:()=>state.upgrades.drain++}
+];
+function winBattle(){state.wins++;state.winsTotal=Math.max(state.winsTotal,state.wins);state.streak++;state.score+=100+state.round*20+state.comboPeak*8;state.waiting=true;state.running=false;setButtons(false);updateHUD();$('actionTitle').textContent='WIN BONUS / 強化を選べ！';$('hint').textContent='次の敵のクセに備えてビルドを選ぼう！';setLog('勝利！ コンボ記録：'+state.comboPeak+'。強化を選んで次の敵へ！');showUpgrades()}
+function showUpgrades(){
+ $('reward').classList.remove('hidden');const root=$('upgrades');root.innerHTML='';let choices=[];while(choices.length<3){const u=rnd(upgradePool);if(!choices.includes(u))choices.push(u)}
+ choices.forEach(u=>{const b=document.createElement('button');b.className='upgrade';b.innerHTML='<div class="uico">'+u.icon+'</div><div class="rarity">'+u.rarity+'</div><strong>'+u.name+'</strong><small>'+u.desc+'</small>';b.onclick=()=>{u.apply();$('reward').classList.add('hidden');startBattle()};root.appendChild(b)});
+ $('overlay').classList.remove('hidden');$('modal').innerHTML='<h1>YOU WIN!</h1><div class="scorebig">WIN × '+state.wins+'</div><p>スコア <b>'+state.score+'</b><br>最高コンボ <b>'+state.comboPeak+'</b> · ランク <b>'+rank()+'</b></p><p>強化を1つ選択して戦い方を進化させよう。</p><button class="bigbtn" id="continueBtn">強化を選ぶ ▼</button>';$('continueBtn').onclick=()=>{$('overlay').classList.add('hidden');$('reward').scrollIntoView({behavior:'smooth',block:'nearest'})};
+}
+function loseBattle(){state.running=false;state.waiting=true;state.streak=0;setButtons(false);updateHUD();$('overlay').classList.remove('hidden');$('modal').innerHTML='<h1 style="color:#ff8197;text-shadow:0 0 18px #ff3b80">TRY AGAIN</h1><div class="scorebig">'+state.wins+' WINS</div><p>最終スコア <b>'+state.score+'</b><br>最高コンボ <b>'+state.comboPeak+'</b><br>相性と敵のクセを読んで、次はさらに連勝しよう！</p><span class="chip">BEST WINS: '+state.winsTotal+'</span><span class="chip">RANK: '+rank()+'</span><button class="bigbtn" id="retryBtn">もう一度挑戦！</button>';$('retryBtn').onclick=resetRun}
+function resetRun(){const best=state.winsTotal;state={running:false,waiting:false,playerHp:100,maxHp:100,enemyHp:66,enemyMax:66,energy:0,specialCharge:0,wins:0,streak:0,round:0,turn:0,enemy:null,lastPlayer:null,lastMoves:[],enemyExposed:0,combo:0,comboPeak:0,winsTotal:best,score:0,upgrades:{attack:0,heavy:0,armor:0,heal:0,read:0,cooldown:0,feint:0,parry:0,combo:0,drain:0,crit:0}};$('overlay').classList.add('hidden');$('reward').classList.add('hidden');startBattle()}
+$('startBtn').onclick=()=>{if(musicEnabled)startBgm();$('overlay').classList.add('hidden');resetRun()};
+document.querySelectorAll('[data-move]').forEach(b=>b.addEventListener('click',()=>action(b.dataset.move)));
+function enemyDefeatSfx(){
+ try{if(!ensureMusic())return;const ac=musicCtx;if(ac.state==='suspended')ac.resume();const t=ac.currentTime+.012;const play=(freq,at,dur,wave,vol,slide)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=wave;o.frequency.setValueAtTime(freq,at);if(slide)o.frequency.exponentialRampToValueAtTime(slide,at+dur*.72);g.gain.setValueAtTime(.0001,at);g.gain.exponentialRampToValueAtTime(vol,at+.009);g.gain.exponentialRampToValueAtTime(.0001,at+dur);o.connect(g);g.connect(ac.destination);o.start(at);o.stop(at+dur+.02)};play(185,t,.16,'sine',.075,62);play(660,t+.012,.075,'square',.038);play(880,t+.065,.085,'triangle',.042);play(1175,t+.125,.12,'triangle',.038);play(1568,t+.205,.15,'sine',.03)}catch(e){}
+}
+// Original upbeat synth BGM generated in the browser (no external audio files).
+let musicEnabled = true, musicCtx = null, musicBus = null, musicTimer = null;
+let musicStep = 0, musicNextTime = 0, musicNoise = null, musicPhrase = 0;
+const MUSIC = {bpm:132,stepSeconds:60/132/2,volume:.62,root:55,chord:[0,4,7],chords:[0,7,5,9],bass:[0,0,7,0,5,5,7,9],lead:[0,4,7,9,7,4,2,4,0,4,7,12,9,7,4,2]};
+function updateMusicButton(){const b=document.getElementById('musicToggle');if(b){b.textContent=musicEnabled?'♫ BGM ON':'♫ BGM OFF';b.setAttribute('aria-pressed',String(musicEnabled));b.classList.toggle('is-off',!musicEnabled)}}
+function ensureMusic(){
+ try{
+  if(!musicCtx) musicCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(musicCtx.state==='suspended') musicCtx.resume();
+  if(!musicBus){
+   musicBus=musicCtx.createGain();musicBus.gain.value=0.0001;musicBus.connect(musicCtx.destination);
+   musicNoise=musicCtx.createBuffer(1,Math.floor(musicCtx.sampleRate*.5),musicCtx.sampleRate);
+   const d=musicNoise.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  }
+  return true;
+ }catch(e){return false}
+}
+function setMusicVolume(){if(musicBus&&musicCtx){const t=musicCtx.currentTime;musicBus.gain.cancelScheduledValues(t);musicBus.gain.setTargetAtTime(musicEnabled?MUSIC.volume:0.0001,t,.055)}}
+function musicNote(midi,when,duration,wave='triangle',volume=.075,cutoff=3000,detune=0){
+ const o=musicCtx.createOscillator(),f=musicCtx.createBiquadFilter(),g=musicCtx.createGain();
+ o.type=wave;o.frequency.setValueAtTime(440*Math.pow(2,(midi-69)/12),when);o.detune.setValueAtTime(detune,when);
+ f.type='lowpass';f.frequency.setValueAtTime(cutoff,when);f.Q.setValueAtTime(.7,when);
+ g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(volume,when+.012);g.gain.setValueAtTime(volume*.72,when+Math.min(.06,duration*.22));g.gain.exponentialRampToValueAtTime(.0001,when+duration);
+ o.connect(f);f.connect(g);g.connect(musicBus);o.start(when);o.stop(when+duration+.025);
+}
+function musicKick(when){
+ const o=musicCtx.createOscillator(),g=musicCtx.createGain();o.type='sine';o.frequency.setValueAtTime(145,when);o.frequency.exponentialRampToValueAtTime(43,when+.15);
+ g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(.24,when+.006);g.gain.exponentialRampToValueAtTime(.0001,when+.19);o.connect(g);g.connect(musicBus);o.start(when);o.stop(when+.2);
+}
+function musicNoiseHit(when,duration,volume,highpass){
+ const src=musicCtx.createBufferSource(),f=musicCtx.createBiquadFilter(),g=musicCtx.createGain();src.buffer=musicNoise;f.type='highpass';f.frequency.setValueAtTime(highpass,when);g.gain.setValueAtTime(.0001,when);g.gain.exponentialRampToValueAtTime(volume,when+.004);g.gain.exponentialRampToValueAtTime(.0001,when+duration);src.connect(f);f.connect(g);g.connect(musicBus);src.start(when);src.stop(when+duration+.01);
+}
+function musicChord(when,root){
+ const len=MUSIC.stepSeconds*3.7;
+ for(const n of MUSIC.chord){musicNote(root+n,when,len,'sawtooth',.021,1200,n===MUSIC.chord[0]?-5:5)}
+}
+function scheduleMusicStep(step,when){
+ const m=MUSIC;
+ // Two-bar club beat: kick, claps, and bright eighth-note hats.
+ if([0,4,8,12].includes(step))musicKick(when);
+ if([2,6,10,14].includes(step))musicNoiseHit(when,.12,.055,1300);
+ if(step%2===1 || step===0)musicNoiseHit(when,.027,.022,6500);
+ const bass=m.bass[step%8];if(step%2===0)musicNote(m.root+bass-12,when,m.stepSeconds*.82,'sawtooth',.10,550);
+ const li=m.lead[(step+((musicPhrase%2)*3))%m.lead.length];
+ if(step%2===1 || [0,4,8,12].includes(step)){
+   musicNote(m.root+24+li,when,m.stepSeconds*(step%4===0?1.05:.72),'sawtooth',.047,3600,step%4===0?3:-3);
+   if(step===3||step===7||step===11||step===15)musicNote(m.root+36+m.lead[(step+5)%m.lead.length],when+.025,m.stepSeconds*.43,'triangle',.025,4200);
+ }
+ if(step===0||step===8)musicChord(when,m.root+m.chords[(musicPhrase+(step===8?1:0))%m.chords.length]);
+ if(step===7||step===15)musicNote(m.root+36,when,m.stepSeconds*.42,'square',.023,2600);
+}
+function musicScheduler(){
+ if(!musicCtx||!musicEnabled)return;const ahead=.14;
+ while(musicNextTime<musicCtx.currentTime+ahead){scheduleMusicStep(musicStep,musicNextTime);musicNextTime+=MUSIC.stepSeconds;musicStep++;if(musicStep>=16){musicStep=0;musicPhrase++;}}
+}
+function startBgm(){
+ if(!musicEnabled)return;if(!ensureMusic())return;setMusicVolume();
+ if(musicTimer)return;musicStep=0;musicPhrase=0;musicNextTime=musicCtx.currentTime+.07;musicScheduler();musicTimer=setInterval(musicScheduler,25);
+}
+function stopBgm(){musicEnabled=false;if(musicTimer){clearInterval(musicTimer);musicTimer=null}setMusicVolume();updateMusicButton()}
+function toggleBgm(){musicEnabled=!musicEnabled;updateMusicButton();if(musicEnabled)startBgm();else stopBgm()}
+const musicToggle=document.getElementById('musicToggle');if(musicToggle)musicToggle.addEventListener('click',toggleBgm);updateMusicButton();
+
+updateHUD();setButtons(false);
+setInterval(()=>{updateHUD()},250);
+})();
+</script>
+</body>
+</html>
