@@ -68,120 +68,25 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .controls{margin-top:8px;font-size:11px}
 }
 @media (prefers-reduced-motion:reduce){.upgrade,.mainbtn{transition:none}}
-/* Online leaderboard modal */
-#rankScreen{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:12px;background:#050713eF;backdrop-filter:blur(8px);z-index:60}
-.rankCard{width:min(94vw,580px);max-height:94%;overflow:auto;border:1px solid #59659c;border-radius:22px;padding:clamp(16px,3vw,26px);background:linear-gradient(145deg,#141b3bf7,#0b1028fa);box-shadow:0 0 60px #574eff26;color:#f2f4ff}
-.rankCard .desc{margin:8px auto 14px}
-.rankField{display:block;text-align:left;margin:9px 0;color:#bcc8eb;font-size:12px;font-weight:800}
-.rankField input{display:block;width:100%;margin-top:5px;padding:11px 12px;border:1px solid #465686;border-radius:10px;background:#080e20;color:#fff;font:inherit;outline:none;user-select:text;-webkit-user-select:text}
-.rankField input:focus{border-color:#51f6ff;box-shadow:0 0 0 2px #51f6ff22}
-.rankCard details{border:1px solid #323d6d;border-radius:12px;padding:9px 11px;text-align:left;margin:12px 0}
-.rankCard summary{cursor:pointer;color:#d3d8ff;font-size:12px;font-weight:900}
-.rankActions{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:10px 0}
-.rankActions button{margin:0}
-#rankStatus{font-size:12px;color:#aebce4;line-height:1.5;min-height:20px;margin:8px 0}
-.rankList{list-style:none;margin:8px 0 12px;padding:0;display:grid;gap:6px;text-align:left}
-.rankEntry{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:9px;align-items:center;border:1px solid #303b68;border-radius:10px;padding:9px 11px;background:#0d1429}
-.rankEntry:nth-child(1){border-color:#b9a448;background:#302b1d}.rankEntry:nth-child(2){border-color:#687b9e}.rankEntry:nth-child(3){border-color:#9b7358}
-.rankPlace{font-size:16px;font-weight:1000;color:#ffe66d}.rankNick{font-weight:900;overflow-wrap:anywhere}.rankMeta{font-size:10px;color:#9facd7;margin-top:3px}.rankScore{font-size:16px;font-weight:1000;color:#51f6ff;white-space:nowrap}
-.rankNote{font-size:10px;color:#7f8bb8;line-height:1.5}
-@media(max-width:520px){.rankCard{padding:15px}.rankEntry{grid-template-columns:27px minmax(0,1fr) auto;padding:8px}.rankScore{font-size:14px}.rankField input{font-size:16px}}
 
 </style></head>
 <body><div id="app"><button id="musicToggle" class="musicToggle" type="button" aria-label="BGM on/off" aria-pressed="true">♫ BGM ON</button><canvas id="game"></canvas>
 <div id="hud"><div id="xpbox"><div id="xpbar"></div></div><div class="top"><div class="glass"><div class="label">CORE / HP</div><div class="hpwrap"><div id="hpbar"></div></div><div id="hptext" class="label" style="margin-top:4px">100 / 100</div><div id="novaBox"><div id="novaText">NOVA BLAST · 0%</div><div id="novaTrack"><div id="novaBar"></div></div></div></div><div class="stats"><div class="glass stat"><div class="label">TIME</div><div id="time" class="value">00:00</div></div><div class="glass stat"><div class="label">K.O.</div><div id="kills" class="value">0</div></div><div class="glass stat"><div class="label">SWARM</div><div id="enemyCount" class="value">0</div></div><div class="glass stat"><div class="label">SCORE</div><div id="score" class="value">0</div></div><div class="glass stat"><div class="label">LV</div><div id="lv" class="value">1</div></div></div></div><div id="bossHud"><div class="label" style="color:#ff9ed7">⚠ OVERLORD</div><div class="bossbar"><div id="bossbarfill"></div></div></div><div id="announce">WAVE UP!</div></div>
 <div id="touchUI"><div id="stickBase"><div id="stick"></div></div><div id="mobileTip">ドラッグで移動</div><div style="display:flex;gap:10px;align-items:end"><button id="novaBtn" disabled>✦<br>NOVA</button><button id="dashBtn">⚡<br>DASH</button></div></div>
-<div id="startScreen"><div class="card"><div style="font-size:34px;margin-bottom:4px">✦ ✧ ✦</div><div class="logo">NEON<br>SWARM</div><div class="tag">ネオン大騒乱 / SURVIVE THE SWARM</div><div class="desc">画面を埋め尽くす大量の敵をぶっ飛ばせ！<br>25種類の敵、分裂、召喚、回復、狙撃、連続ボス。大群ラッシュが来る前に強化を重ねろ。<br><b style="color:#51f6ff">25秒ごとに大群襲来。</b>生き残れるか？</div><div class="chips"><span class="chip">自動攻撃</span><span class="chip">コンボ倍率</span><span class="chip">必殺NOVA</span><span class="chip">20+敵タイプ</span><span class="chip">大群ラッシュ</span></div><button class="mainbtn" id="startBtn">出撃する ▶</button><br><button class="subbtn" id="openRanksTitle">🏆 オンラインランキング</button><div class="controls">PC：WASD / 矢印キーで移動・Spaceでダッシュ・EでNOVA<br>スマホ：左のスティックで移動・右下のボタンで必殺＆ダッシュ<br>攻撃は自動！ 青い経験値で強化。Eキー／✦NOVAで画面一掃の必殺技！</div></div></div>
+<div id="startScreen"><div class="card"><div style="font-size:34px;margin-bottom:4px">✦ ✧ ✦</div><div class="logo">NEON<br>SWARM</div><div class="tag">ネオン大騒乱 / SURVIVE THE SWARM</div><div class="desc">画面を埋め尽くす大量の敵をぶっ飛ばせ！<br>25種類の敵、分裂、召喚、回復、狙撃、連続ボス。大群ラッシュが来る前に強化を重ねろ。<br><b style="color:#51f6ff">25秒ごとに大群襲来。</b>生き残れるか？</div><div class="chips"><span class="chip">自動攻撃</span><span class="chip">コンボ倍率</span><span class="chip">必殺NOVA</span><span class="chip">20+敵タイプ</span><span class="chip">大群ラッシュ</span></div><button class="mainbtn" id="startBtn">出撃する ▶</button><div class="controls">PC：WASD / 矢印キーで移動・Spaceでダッシュ・EでNOVA<br>スマホ：左のスティックで移動・右下のボタンで必殺＆ダッシュ<br>攻撃は自動！ 青い経験値で強化。Eキー／✦NOVAで画面一掃の必殺技！</div></div></div>
 <div id="overlay"><div class="card" id="modalCard"></div></div>
-<div id="rankScreen" role="dialog" aria-modal="true" aria-label="オンラインランキング">
- <div class="rankCard">
-  <div class="modalTitle">🏆 GLOBAL RANKING</div>
-  <div class="desc">友達とスコアを競おう！ 最初にSupabaseの接続設定が必要だよ。</div>
-  <label class="rankField">ニックネーム（16文字まで）<input id="rankNickname" maxlength="16" autocomplete="nickname" placeholder="NEON_PLAYER"></label>
-  <details open id="rankSetupDetails">
-   <summary>オンライン接続設定（最初の1回だけ）</summary>
-   <label class="rankField">Supabase Project URL<input id="rankProjectUrl" type="url" autocomplete="url" placeholder="https://xxxxxxxx.supabase.co"></label>
-   <label class="rankField">Publishable key<input id="rankPublishableKey" type="password" autocomplete="off" placeholder="sb_publishable_..."></label>
-   <div class="rankNote">公開用のPublishable key（または旧anon key）だけを使ってね。Secret key / service_role keyは絶対に入力しないでね。</div>
-  </details>
-  <div class="rankActions"><button class="mainbtn" id="saveRankSettings">設定を保存して読み込む</button><button class="subbtn" id="refreshRanks">ランキング更新</button></div>
-  <div id="rankStatus" aria-live="polite">まだ接続されていないよ。URLとPublishable keyを入れてね。</div>
-  <ol id="rankList" class="rankList"><li class="rankNote">接続すると上位10人が表示されるよ。</li></ol>
-  <div class="rankNote">表示されるのはニックネーム・スコア・撃破数・生存時間・レベルだけ。個人名や住所などは入力しないでね。ランキングは簡易版なので、不正スコアを完全には防げないよ。</div>
-  <div class="rankActions"><button class="subbtn" id="closeRanks">閉じる</button></div>
- </div>
-</div>
 </div>
 <script>
 (()=>{'use strict';
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');let W=0,H=0,DPR=1;
 const $=id=>document.getElementById(id);const hud=$('hud'),startScreen=$('startScreen'),overlay=$('overlay'),touchUI=$('touchUI');
-const RANK_CONFIG_KEY='neon_swarm_horde_rank_settings_v1';
-// For sharing the game with friends without asking each person to configure it,
-// paste your project's URL and public Publishable key into these two defaults.
-// They are public client credentials; NEVER place a secret/service_role key here.
-const DEFAULT_RANK_URL='';
-const DEFAULT_RANK_PUBLISHABLE_KEY='';
-let rankSubmitted=false;
-function readRankConfig(){try{const saved=JSON.parse(localStorage.getItem(RANK_CONFIG_KEY)||'{}');return {url:saved.url||DEFAULT_RANK_URL,key:saved.key||DEFAULT_RANK_PUBLISHABLE_KEY,name:saved.name||'NEON_PLAYER'}}catch(e){return {url:DEFAULT_RANK_URL,key:DEFAULT_RANK_PUBLISHABLE_KEY,name:'NEON_PLAYER'}}}
-function setRankStatus(message,isError=false){const el=$('rankStatus');if(el){el.textContent=message;el.style.color=isError?'#ff8baf':'#aeeccf'}}
-function cleanNick(value){return String(value||'').replace(/[<>\u0000-\u001f]/g,'').trim().slice(0,16)||'NEON_PLAYER'}
-function fillRankSettings(){const c=readRankConfig();$('rankNickname').value=c.name||'NEON_PLAYER';$('rankProjectUrl').value=c.url||'';$('rankPublishableKey').value=c.key||''}
-function openRankScreen(){fillRankSettings();$('rankScreen').style.display='flex';const c=readRankConfig();if(c.url&&c.key)loadLeaderboard();else setRankStatus('最初にProject URLとPublishable keyを入力して「設定を保存して読み込む」を押してね。')}
-function closeRankScreen(){$('rankScreen').style.display='none'}
-function normalizedProjectUrl(value){try{const u=new URL(String(value||'').trim());if(u.protocol!=='https:'||!u.hostname)return '';return u.origin.replace(/\/$/,'')}catch(e){return ''}}
-function rankHeaders(key, extra={}){return Object.assign({'apikey':key},extra)}
-async function saveRankSettings(){
- const url=normalizedProjectUrl($('rankProjectUrl').value),key=$('rankPublishableKey').value.trim(),name=cleanNick($('rankNickname').value);
- if(!url){setRankStatus('Project URLを確認してね。https:// から始まるURLが必要だよ。',true);return}
- if(!key||key.toLowerCase().includes('service_role')||key.toLowerCase().includes('secret')){setRankStatus('Publishable key（または旧anon key）を入力してね。Secret/service_role keyは使えないよ。',true);return}
- try{localStorage.setItem(RANK_CONFIG_KEY,JSON.stringify({url,key,name}));}catch(e){setRankStatus('ブラウザに設定を保存できなかったよ。プライベートモードではなく通常のブラウザで試してね。',true);return}
- $('rankProjectUrl').value=url;$('rankNickname').value=name;setRankStatus('設定を保存したよ。ランキングを読み込んでいます…');await loadLeaderboard();if(state==='over'&&!rankSubmitted)await submitRunScore();
-}
-async function loadLeaderboard(){
- const c=readRankConfig();if(!c.url||!c.key){setRankStatus('先にオンライン接続設定を入力してね。',true);return}
- const base=normalizedProjectUrl(c.url);if(!base){setRankStatus('保存されているProject URLが正しくないみたい。設定を確認してね。',true);return}
- setRankStatus('ランキングを読み込み中…');$('rankList').innerHTML='<li class="rankNote">読み込み中…</li>';
- try{
-  const qs='?select=player_name,score,kills,survived_seconds,level,created_at&order=score.desc,created_at.asc&limit=10';
-  const res=await fetch(base+'/rest/v1/neon_swarm_scores'+qs,{headers:rankHeaders(c.key),cache:'no-store'});
-  if(!res.ok){let text=await res.text();throw new Error(`HTTP ${res.status}: ${text.slice(0,240)}`)}
-  const rows=await res.json();$('rankList').replaceChildren();
-  if(!rows.length){const li=document.createElement('li');li.className='rankNote';li.textContent='まだスコアがないよ。最初のランカーを目指そう！';$('rankList').appendChild(li)}
-  rows.forEach((row,i)=>{
-   const li=document.createElement('li');li.className='rankEntry';
-   const place=document.createElement('span');place.className='rankPlace';place.textContent=['🥇','🥈','🥉'][i]||String(i+1);
-   const info=document.createElement('div');const nick=document.createElement('div');nick.className='rankNick';nick.textContent=cleanNick(row.player_name);const meta=document.createElement('div');meta.className='rankMeta';meta.textContent=`K.O. ${Number(row.kills)||0} ・ ${Number(row.survived_seconds)||0}秒 ・ LV.${Number(row.level)||1}`;info.append(nick,meta);
-   const scoreEl=document.createElement('span');scoreEl.className='rankScore';scoreEl.textContent=(Number(row.score)||0).toLocaleString();li.append(place,info,scoreEl);$('rankList').appendChild(li);
-  });
-  setRankStatus(`ランキングを読み込んだよ（${rows.length}件）。`);
- }catch(e){$('rankList').innerHTML='<li class="rankNote">ランキングを読み込めなかったよ。URL・key・SQL設定を確認してね。</li>';setRankStatus('接続エラー：'+String(e.message||e).slice(0,240),true)}
-}
-async function submitRunScore(){
- if(rankSubmitted)return;
- const c=readRankConfig();if(!c.url||!c.key){const status=$('rankSubmitStatus');if(status)status.textContent='ランキング未接続：オンラインランキングから設定すると送信できるよ。';return}
- const url=normalizedProjectUrl(c.url),name=cleanNick(c.name);if(!url)return;rankSubmitted=true;
- const payload={player_name:name,score:Math.max(0,Math.floor(score)),kills:Math.max(0,Math.floor(kills)),survived_seconds:Math.max(0,Math.floor(elapsed)),level:Math.max(1,Math.floor(level))};
- const status=$('rankSubmitStatus');if(status)status.textContent='ランキングにスコアを送信中…';
- try{
-  const res=await fetch(url+'/rest/v1/neon_swarm_scores',{method:'POST',headers:rankHeaders(c.key,{'Content-Type':'application/json','Prefer':'return=minimal'}),body:JSON.stringify(payload)});
-  if(!res.ok){const body=await res.text();throw new Error(`HTTP ${res.status}: ${body.slice(0,180)}`)}
-  if(status)status.textContent='✅ オンラインランキングに送信したよ！';
- }catch(e){rankSubmitted=false;if(status)status.textContent='⚠️ スコアを送れなかったよ。ランキング画面で設定を確認して、もう一度保存すれば再送できるよ。';console.warn('Leaderboard submit failed:',e)}
-}
-$('openRanksTitle').addEventListener('click',openRankScreen);
-$('saveRankSettings').addEventListener('click',saveRankSettings);
-$('refreshRanks').addEventListener('click',loadLeaderboard);
-$('closeRanks').addEventListener('click',closeRankScreen);
-$('rankScreen').addEventListener('click',e=>{if(e.target===$('rankScreen'))closeRankScreen()});
-$('rankNickname').addEventListener('change',()=>{const c=readRankConfig();c.name=cleanNick($('rankNickname').value);try{localStorage.setItem(RANK_CONFIG_KEY,JSON.stringify(c))}catch(e){}});
 let state='title',last=0,elapsed=0,spawnT=0,attackT=0,shake=0,enemyId=0,dropT=0,ambientT=0,level=1,xp=0,xpNeed=7,kills=0,score=0,coins=0,combo=0,comboTimer=0,highCombo=0,bossCount=0,runSeed=0,surgeT=7,miniBossCount=0;
 let player,bullets=[],enemyBullets=[],enemies=[],gems=[],particles=[],floating=[],pickups=[],stars=[],upgrades={},chosen=[];let keys={},stick={active:false,id:null,x:0,y:0,dx:0,dy:0};let dashCd=0,nova=0,novaWasReady=false,flash=0,attackRange=330,shotSpeed=580,baseDamage=16,fireRate=.38,projectiles=1,penetration=0,magnet=105,orbitCount=0,shield=0,critChance=.08,moveSpeed=235,damageReduce=0;
 const rand=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>Math.floor(rand(a,b)),dist2=(a,b)=>{let x=a.x-b.x,y=a.y-b.y;return x*x+y*y};
 function resize(){DPR=Math.min(2,window.devicePixelRatio||1);const vv=window.visualViewport;W=Math.max(1,Math.round(vv?.width||document.documentElement.clientWidth||window.innerWidth));H=Math.max(1,Math.round(vv?.height||document.documentElement.clientHeight||window.innerHeight));canvas.width=Math.round(W*DPR);canvas.height=Math.round(H*DPR);canvas.style.width=W+'px';canvas.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);stars=Array.from({length:Math.ceil(W*H/9000)},()=>({x:Math.random()*W,y:Math.random()*H,r:rand(.4,1.6),a:rand(.1,.55),p:rand(0,6)}));if(player){player.x=Math.max(17,Math.min(W-17,player.x));player.y=Math.max(17,Math.min(H-17,player.y));}}
 window.addEventListener('resize',resize,{passive:true});window.addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});if(window.visualViewport)window.visualViewport.addEventListener('resize',resize,{passive:true});resize();
 function showAnnounce(s){const a=$('announce');a.textContent=s;a.classList.remove('show');void a.offsetWidth;a.classList.add('show')}
-function reset(){rankSubmitted=false;elapsed=0;spawnT=.25;attackT=.1;shake=0;flash=0;nova=0;novaWasReady=false;enemyId=0;dropT=0;ambientT=0;level=1;xp=0;xpNeed=7;kills=0;score=0;coins=0;combo=0;comboTimer=0;highCombo=0;bossCount=0;surgeT=7;miniBossCount=0;bullets=[];enemyBullets=[];enemies=[];gems=[];particles=[];floating=[];pickups=[];chosen=[];dashCd=0;attackRange=330;shotSpeed=580;baseDamage=16;fireRate=.38;projectiles=1;penetration=0;magnet=105;orbitCount=0;shield=0;critChance=.08;moveSpeed=235;damageReduce=0;upgrades={};player={x:W/2,y:H/2,r:13,hp:100,maxHp:100,speed:moveSpeed,invuln:0,dash:0,angle:0,hitFlash:0};for(let i=0;i<ri(3,5);i++)spawnEnemy(true);updateHUD();}
+function reset(){elapsed=0;spawnT=.25;attackT=.1;shake=0;flash=0;nova=0;novaWasReady=false;enemyId=0;dropT=0;ambientT=0;level=1;xp=0;xpNeed=7;kills=0;score=0;coins=0;combo=0;comboTimer=0;highCombo=0;bossCount=0;surgeT=7;miniBossCount=0;bullets=[];enemyBullets=[];enemies=[];gems=[];particles=[];floating=[];pickups=[];chosen=[];dashCd=0;attackRange=330;shotSpeed=580;baseDamage=16;fireRate=.38;projectiles=1;penetration=0;magnet=105;orbitCount=0;shield=0;critChance=.08;moveSpeed=235;damageReduce=0;upgrades={};player={x:W/2,y:H/2,r:13,hp:100,maxHp:100,speed:moveSpeed,invuln:0,dash:0,angle:0,hitFlash:0};for(let i=0;i<ri(3,5);i++)spawnEnemy(true);updateHUD();}
 function hasTouchControls(){return (window.matchMedia&&window.matchMedia('(pointer: coarse)').matches)||('ontouchstart'in window)||(navigator.maxTouchPoints||0)>0;}
 function syncControlMode(){const useTouch=hasTouchControls();touchUI.style.display=useTouch?'flex':'none';document.body.classList.toggle('touch-device',useTouch);}
 function start(){if(musicEnabled)startBgm();resize();reset();state='playing';startScreen.style.display='none';overlay.style.display='none';hud.style.display='block';syncControlMode();last=performance.now();showAnnounce('SYSTEM ONLINE');tone(260,.12,'triangle');setTimeout(()=>tone(520,.2,'sine'),80);}
@@ -308,7 +213,7 @@ const upgradesList=[
 function levelUp(){while(xp>=xpNeed){xp-=xpNeed;level++;xpNeed=Math.floor(xpNeed*1.32+3);state='level';makeUpgradeModal();return}}
 function makeUpgradeModal(){const choices=[];const pool=upgradesList.filter(u=>!(u.id==='multi'&&projectiles>=5)&&!(u.id==='pierce'&&penetration>=4)&&!(u.id==='orbit'&&orbitCount>=5)&&!(u.id==='crit'&&critChance>=.55)&&!(u.id==='shield'&&damageReduce>=.6));while(choices.length<3&&pool.length){let i=ri(0,pool.length);choices.push(pool.splice(i,1)[0])} $('modalCard').innerHTML=`<div class="modalTitle">LEVEL UP! <span style="color:#ff4ca4">↑</span></div><div class="desc" style="margin:8px 0 0">強化を1つ選べ。組み合わせは無限大。</div><div id="levelChoices"></div>`;let box=$('levelChoices');choices.forEach(u=>{let b=document.createElement('button');b.className='upgrade';b.innerHTML=`<div class="ico">${u.icon}</div><div><b>${u.name}</b><small>${u.desc}</small></div>`;b.onclick=()=>{u.apply();upgrades[u.id]=(upgrades[u.id]||0)+1;chosen.push(u.name);state='playing';overlay.style.display='none';last=performance.now();burst(player.x,player.y,'#51f6ff',20,180);updateHUD()};box.appendChild(b)});overlay.style.display='flex';updateHUD()}
 function pauseGame(){if(state==='playing'){state='paused';$('modalCard').innerHTML=`<div class="modalTitle">PAUSED</div><div class="desc">ひと休み中。準備ができたら再開。</div><button class="mainbtn" id="resume">再開する ▶</button>`;$('resume').onclick=()=>{state='playing';overlay.style.display='none';last=performance.now()};overlay.style.display='flex'}else if(state==='paused'){state='playing';overlay.style.display='none';last=performance.now()}}
-function gameOver(){state='over';touchUI.style.display='none';hud.style.display='none';$('modalCard').innerHTML=`<div style="font-size:48px">${elapsed>100?'👑':'💥'}</div><div class="modalTitle" style="color:#ff5d9e">RUN OVER</div><div class="desc">ネオンの嵐は終わった。でも次はもっと強くなれる。</div><div class="label">FINAL SCORE</div><div class="resultNum">${score.toLocaleString()}</div><div class="resultGrid"><div><b>${Math.floor(elapsed)}s</b><small>SURVIVED</small></div><div><b>${kills}</b><small>K.O.</small></div><div><b>LV.${level}</b><small>LEVEL</small></div></div><div class="desc" style="font-size:12px">最大コンボ：${highCombo}　/　ボス撃破：${bossCount}体</div><div class="desc" id="rankSubmitStatus" style="font-size:12px">ランキング送信を確認中…</div><button class="mainbtn" id="again">もう一回 ▶</button><br><button class="subbtn" id="showRanksResult">🏆 オンラインランキング</button><button class="subbtn" id="titleBtn">タイトルへ</button>`;overlay.style.display='flex';$('again').onclick=start;$('showRanksResult').onclick=openRankScreen;$('titleBtn').onclick=()=>{state='title';overlay.style.display='none';startScreen.style.display='flex';hud.style.display='none';touchUI.style.display='none'};submitRunScore();}
+function gameOver(){state='over';touchUI.style.display='none';hud.style.display='none';$('modalCard').innerHTML=`<div style="font-size:48px">${elapsed>100?'👑':'💥'}</div><div class="modalTitle" style="color:#ff5d9e">RUN OVER</div><div class="desc">ネオンの嵐は終わった。でも次はもっと強くなれる。</div><div class="label">FINAL SCORE</div><div class="resultNum">${score.toLocaleString()}</div><div class="resultGrid"><div><b>${Math.floor(elapsed)}s</b><small>SURVIVED</small></div><div><b>${kills}</b><small>K.O.</small></div><div><b>LV.${level}</b><small>LEVEL</small></div></div><div class="desc" style="font-size:12px">最大コンボ：${highCombo}　/　ボス撃破：${bossCount}体</div><button class="mainbtn" id="again">もう一回 ▶</button><br><button class="subbtn" id="titleBtn">タイトルへ</button>`;overlay.style.display='flex';$('again').onclick=start;$('titleBtn').onclick=()=>{state='title';overlay.style.display='none';startScreen.style.display='flex';hud.style.display='none';touchUI.style.display='none'};}
 function update(dt){if(state!=='playing')return;elapsed+=dt;flash=Math.max(0,flash-dt*1.65);dashCd=Math.max(0,dashCd-dt);player.invuln=Math.max(0,player.invuln-dt);player.hitFlash=Math.max(0,player.hitFlash-dt);if(comboTimer>0){comboTimer-=dt;if(comboTimer<=0)combo=0}
 let dx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),dy=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);if(stick.active){dx=stick.dx;dy=stick.dy}let len=Math.hypot(dx,dy);if(len>1){dx/=len;dy/=len}if(player.dash>0){player.x+=player.vx*dt;player.y+=player.vy*dt;player.vx*=Math.pow(.09,dt);player.vy*=Math.pow(.09,dt);player.dash-=dt;if(Math.random()<.8)particles.push({x:player.x,y:player.y,vx:rand(-20,20),vy:rand(-20,20),r:rand(3,6),color:'#51f6ff',life:.3,max:.3})}else{const effectiveSpeed=player.speed*((player.slowT||0)>0?.68:1);if(player.slowT)player.slowT=Math.max(0,player.slowT-dt);player.x+=dx*effectiveSpeed*dt;player.y+=dy*effectiveSpeed*dt;if(len>.1)player.angle=Math.atan2(dy,dx)}player.x=Math.max(17,Math.min(W-17,player.x));player.y=Math.max(17,Math.min(H-17,player.y));
 spawnT-=dt;surgeT-=dt;
