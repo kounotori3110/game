@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#eaf8d7">
+<title>わいわいラグビー！</title>
+<style>
+:root{--ink:#254d35;--cream:#fff9e8;--green:#6fd15c;--orange:#ff9646;--blue:#4e94f7;--pink:#ff719d;--gold:#ffe36e}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);background:#eaf8d7}body{padding:clamp(6px,1.6vw,16px);overscroll-behavior:none}button{font:inherit;touch-action:manipulation;cursor:pointer;user-select:none;-webkit-user-select:none}.game{max-width:1120px;margin:0 auto}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:9px}.logo{font-weight:1000;letter-spacing:-1px;font-size:clamp(24px,4.5vw,39px);line-height:1;color:#276744;text-shadow:2px 3px 0 #fff}.logo em{font-style:normal;color:#ff8438}.tag{background:#fffdf0;border:2px solid #d9e8ae;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:850}
+.hud{display:flex;gap:7px;align-items:stretch;flex-wrap:wrap;margin:0 0 10px}.huditem{background:#fffdf0;border:2px solid #dcebb7;border-radius:13px;padding:6px 10px;min-width:68px;box-shadow:0 3px 0 #cee1a4}.huditem small{display:block;font-size:11px;color:#618064;font-weight:800}.huditem strong{font-size:19px;line-height:1.3}.huditem.wide{min-width:130px}.huditem.wide strong{font-size:14px}.smallbuttons{display:flex;gap:5px;margin-left:auto}.secondary{border:2px solid #d8e6b6;border-radius:11px;background:#fff;color:#356344;padding:6px 10px;font-weight:900}
+.fieldwrap{position:relative;border:5px solid #fff7d9;border-radius:21px;overflow:hidden;box-shadow:0 7px 0 #c6df9d,0 15px 30px #63854d21;background:#72d65f}canvas{display:block;width:100%;height:auto;aspect-ratio:900/560;touch-action:none}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:12px;background:#173f2d55;backdrop-filter:blur(3px)}.dialog{background:#fff9e8;border:3px solid #fff;border-radius:22px;max-width:500px;width:100%;padding:17px;text-align:center;box-shadow:0 8px 0 #23433330}.dialog .hero{font-size:47px;line-height:1.1}.dialog h1{font-size:clamp(24px,4.8vw,34px);margin:4px 0 7px;color:#276744}.dialog p{font-size:13px;color:#57705c;line-height:1.6;margin:7px 0 12px}.bigbtn{border:0;border-radius:15px;padding:12px 20px;background:#ff9646;color:#fff;font-weight:1000;font-size:17px;box-shadow:0 5px 0 #d46b28;min-width:165px}.bigbtn:active{transform:translateY(3px);box-shadow:0 2px 0 #d46b28}
+.controls{display:flex;align-items:center;justify-content:space-between;gap:11px;margin-top:12px;background:#fff9e8;border:2px solid #dcebb7;border-radius:19px;padding:10px}.dpad{display:grid;grid-template-columns:repeat(3,43px);grid-template-rows:repeat(2,38px);gap:4px;touch-action:none;flex-shrink:0}.ctrl{border:0;border-radius:12px;background:#d9f5bd;color:#276744;font-size:19px;font-weight:1000;box-shadow:0 4px 0 #a7d78b;display:grid;place-items:center}.ctrl:active,.ctrl.active{transform:translateY(2px);box-shadow:0 1px 0 #a7d78b;background:#b8e992}#up{grid-column:2;grid-row:1}#left{grid-column:1;grid-row:2}#down{grid-column:2;grid-row:2}#right{grid-column:3;grid-row:2}.controlhint{font-size:12px;color:#6a8469;line-height:1.5;flex:1;text-align:center;min-width:110px}.controlhint b{color:#356b40}.actionbuttons{display:flex;gap:6px;align-items:center;flex-shrink:0}.action{width:68px;height:68px;border:0;border-radius:50%;font-size:11px;font-weight:1000;color:#fff;background:#ff9b44;box-shadow:0 5px 0 #bd6b36;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;line-height:1.1}.action span{font-size:23px;line-height:1}#passBtn{background:#4e94f7;box-shadow:0 5px 0 #2a62b6}#stepBtn{background:#b47bf1;box-shadow:0 5px 0 #7e4eb8}.action:active,.action.active{transform:translateY(3px);box-shadow:0 2px 0 #777}
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:9px;font-size:11px;color:#617b60}.rule{background:#fff9e8;border:1px solid #dcebb7;border-radius:12px;padding:8px 10px;line-height:1.45}.rule b{color:#386944}.hidden{display:none!important}
+@media(max-width:650px){
+ body{padding:6px}.tag{font-size:10px;padding:5px 8px}.hud{gap:4px}.huditem{min-width:54px;padding:5px 7px}.huditem strong{font-size:16px}.huditem.wide{min-width:96px}.huditem.wide strong{font-size:12px}.smallbuttons{gap:3px}.secondary{padding:5px 7px;font-size:11px}.fieldwrap{border-width:3px;border-radius:14px}
+ .controls{display:grid;grid-template-columns:minmax(100px, .8fr) minmax(0,1.2fr);grid-template-areas:"pad actions" "hint hint";align-items:center;gap:8px;padding:9px;margin-top:9px}
+ .dpad{grid-area:pad;justify-self:center;grid-template-columns:repeat(3,clamp(30px,9vw,36px));grid-template-rows:repeat(2,clamp(30px,8.7vw,35px));gap:4px}
+ .ctrl{border-radius:10px;font-size:16px;min-width:30px;min-height:30px}
+ .actionbuttons{grid-area:actions;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));justify-items:center;align-items:center;gap:7px 4px;width:100%;min-width:0}
+ .action{width:clamp(52px,16vw,62px);height:clamp(52px,16vw,62px);font-size:10px;padding:2px}
+ .action span{font-size:20px}.action small{font-size:10px;line-height:1.05}
+ .controlhint{grid-area:hint;order:initial;min-width:0;width:100%;font-size:11px;padding-top:2px}
+ .rules{grid-template-columns:1fr;font-size:11px}.dialog{padding:12px}.dialog .hero{font-size:37px}.dialog p{font-size:12px;margin:6px 0 9px}
+}
+@media(max-width:370px){.logo{font-size:22px}.huditem{min-width:48px;padding:4px 5px}.huditem small{font-size:9px}.huditem strong{font-size:14px}.huditem.wide{min-width:85px}.controls{grid-template-columns:96px minmax(0,1fr);gap:6px;padding:7px}.action{width:51px;height:51px}.action span{font-size:18px}.dpad{grid-template-columns:repeat(3,29px);grid-template-rows:repeat(2,29px);gap:3px}}
+@media(max-height:520px) and (orientation:landscape){body{padding:4px}.logo{font-size:22px}header{margin-bottom:4px}.hud{margin-bottom:5px}.huditem{padding:3px 7px}.huditem strong{font-size:15px}.fieldwrap{max-height:55vh}.controls{margin-top:5px;padding:5px;gap:6px}.dpad{grid-template-rows:repeat(2,28px)}.action{width:48px;height:48px}.action span{font-size:17px}.rules{margin-top:5px}}
+button, .fieldwrap, .dpad, .ctrl, .action{touch-action:none}
+@media(hover:none){button{-webkit-tap-highlight-color:transparent}}
+
+</style>
+</head>
+<body><div class="game">
+<header><div class="logo">わいわい<em>ラグビー！</em> 🏉</div><div class="tag">走る・パス・ステップ・タックル！</div></header>
+<div class="hud">
+ <div class="huditem"><small>🏆 得点</small><strong id="score">0</strong></div><div class="huditem"><small>🎉 トライ</small><strong id="tries">0</strong></div><div class="huditem"><small>😵 失トライ</small><strong id="conceded">0</strong></div><div class="huditem"><small>⏱️ のこり</small><strong id="time">120</strong></div><div class="huditem wide"><small>📣 作戦フェーズ</small><strong id="phase">前半：アタック</strong></div><div class="huditem"><small>⚡ スタミナ</small><strong id="stamina">100%</strong></div><div class="smallbuttons"><button class="secondary" id="pauseBtn">⏸ 休憩</button><button class="secondary" id="soundBtn">🔊 SE ON</button></div>
+</div>
+<div class="fieldwrap"><canvas id="field" width="900" height="560" aria-label="ラグビー場"></canvas>
+<div class="overlay" id="overlay"><div class="dialog"><div class="hero">🏉🌱🙌</div><h1 id="overlayTitle">わいわいラグビー！</h1><p id="overlayText">120秒のミニラグビー！最初の60秒はアタック、後半60秒はディフェンス。仲間はボールより後ろを走ってサポート。パスは飛んでいる間も走り続けるよ。タックル・トライ・反則の後は、両チームが走って陣形を作り直してから再開！</p><button class="bigbtn" id="startBtn">キックオフ！</button><p style="font-size:11px;margin-bottom:0">PC：WASD／矢印で移動、Shiftでダッシュ、E＝左パス、R＝右パス、Space＝右パス／タックル、C＝ステップ<br>ディフェンスは前進キーを押すとラッシュ。スマホ：方向ボタン・ダッシュ・左右パス・タックル・ステップ</p></div></div>
+</div>
+<div class="controls"><div class="dpad" aria-label="移動"><button class="ctrl" id="up" data-dir="up">▲</button><button class="ctrl" id="left" data-dir="left">◀</button><button class="ctrl" id="down" data-dir="down">▼</button><button class="ctrl" id="right" data-dir="right">▶</button></div><div class="controlhint" id="controlHint">アタック：右へ走ろう！<br><b>E＝左パス／R＝右パス</b></div><div class="actionbuttons"><button class="action" id="dashBtn"><span>💨</span>ダッシュ</button><button class="action" id="targetBtn"><span>↖️</span><small id="targetText">左パス E</small></button><button class="action" id="passBtn"><span>↘️</span><small>右パス R</small></button><button class="action" id="stepBtn"><span>🌀</span>ステップ</button></div></div>
+<div class="rules"><div class="rule">➡️ <b>アタック：</b>右がトライゾーン。仲間は後ろ・横に走ってサポート。パスは後ろか横へ！</div><div class="rule">🛡️ <b>ディフェンス：</b>相手の前に横一列。前進キーでラッシュ、W/Sで横移動。逆方向を押してもラインは強制後退しない。近づいてタックル！</div><div class="rule">💥 <b>タックル：</b>タックルでプレーは止まり、約1.7秒のラックで両チームが走って位置を整え、相手ボールで再開。</div><div class="rule">🚩 <b>反則：</b>前パスやタッチラインは反則となり相手ボール。ラック中はオフサイドラインを越えないようにする簡易ルール。</div></div>
+</div>
+<script>
+(()=>{'use strict';
+const canvas=document.getElementById('field'),ctx=canvas.getContext('2d'),$=id=>document.getElementById(id);
+const W=900,H=560,FW=2400,FH=1200,L=40,R=2360,T=40,B=1160,TRY_L=145,TRY_R=2255,CY=600;
+const teamColors=['#ff9646','#ff719d','#ffe36e','#b47bf1','#ffbd82'],defColors=['#4e94f7','#64bbff','#4076d8','#8fbcff','#3769b8'];
+const keys=new Set(),touchDirs=new Set();
+let us=[],them=[],running=false,paused=false,ended=false,state='menu',possession='us',phase='attack',timeLeft=120,score=0,tries=0,conceded=0,stamina=100;
+let dashHeld=false,dashCooldown=0,passCooldown=0,tackleCooldown=0,stepCooldown=0,stepTime=0,stepDX=0,stepDY=0,cpuPassTimer=3.8,cpuLaneTimer=0,cpuLane=CY;
+let toast='',toastTimer=0,celebrate=0,halfFlash=0,soundOn=true,audio=null,lastTime=0,raf=0,frameDt=0;
+let lineCenterX=FW/2,lineCenterY=CY,cameraX=FW/2,cameraY=CY,cameraReady=false;
+let setPiece=null,passFlight=null,ballOnGround={x:FW/2,y:CY},lineX=FW/2-80,lineShift=0,lineOffset=58,receiverId=1,leftReceiverId=-1,rightReceiverId=-1;
+const rowOffsets=[-360,-180,0,180,360];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function makePlayer(id,side,x,y){return{id,side,x,y,vx:0,vy:0,color:side==='us'?teamColors[id%5]:defColors[id%5],hasBall:false,anim:Math.random()*8,tx:x,ty:y,stun:0,stepInvuln:0};}
+function carrier(team){return team.find(p=>p.hasBall)||null;}function teamOf(side){return side==='us'?us:them;}function enemyOf(side){return side==='us'?them:us;}function opposing(side){return side==='us'?'them':'us';}function ownerCarrier(){return carrier(teamOf(possession));}function attackDir(side){const base=side==='us'?1:-1;return phase==='attack'?base:-base;}
+function playTone(freq=440,dur=.12,type='sine',vol=.04,slide=0){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),audio.currentTime+dur);g.gain.setValueAtTime(vol,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+dur);}catch(e){}}
+function say(text,seconds=1){toast=text;toastTimer=seconds;}
+function updateHud(){
+ $('score').textContent=score;$('tries').textContent=tries;$('conceded').textContent=conceded;$('time').textContent=Math.max(0,Math.ceil(timeLeft));$('phase').textContent=phase==='attack'?'前半：アタック':'後半：ディフェンス';$('stamina').textContent=Math.round(stamina)+'%';
+ const attack=possession==='us';
+ $('targetBtn').classList.toggle('hidden',!attack);$('stepBtn').classList.toggle('hidden',!attack);
+ $('targetBtn').innerHTML='<span>↖️</span><small>左パス E</small>';
+ $('passBtn').innerHTML=attack?'<span>↘️</span><small>右パス R</small>':'<span>💪</span><small>タックル</small>';
+ const forwardKey=attackDir('them')<0?'→ / D':'← / A';
+ $('controlHint').innerHTML=state==='ruck'||state==='restart'?`両チームが陣形を作り直し中<br><b>${(setPiece?.time||0)>0?'あと '+setPiece.time.toFixed(1)+' 秒':'ラインを最終確認中…'}</b>`:attack?'左の味方へ E／右の味方へ R<br><b>広がったラインを使ってパスしよう</b>':`ディフェンス：${forwardKey} で前に詰める！<br><b>反対キーで後退／W・Sで横移動。無操作ならその場で構える</b>`;
+
+}
+function initTeams(){
+ us=[];them=[];
+ for(let i=0;i<5;i++){
+  us.push(makePlayer(i,'us',FW/2-18*i,CY+rowOffsets[i]*.32));
+  them.push(makePlayer(i,'them',FW/2+70+18*i,CY+rowOffsets[i]*.32));
+ }
+ us.forEach(p=>p.hasBall=false);them.forEach(p=>p.hasBall=false);us[0].hasBall=true;receiverId=1;leftReceiverId=-1;rightReceiverId=-1;
+}
+function moveTowards(p,tx,ty,speed,dt){p.tx=clamp(tx,L+12,R-12);p.ty=clamp(ty,T+18,B-18);const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);if(d<.7){p.vx*=.5;p.vy*=.5;return;}const step=Math.min(d,speed*dt),ox=p.x,oy=p.y;p.x+=dx/d*step;p.y+=dy/d*step;p.vx=(p.x-ox)/Math.max(dt,.001);p.vy=(p.y-oy)/Math.max(dt,.001);if(step>.1)p.anim+=step*.105;}
+function targetAt(p,x,y,speed,dt){moveTowards(p,clamp(x,L+12,R-12),clamp(y,T+18,B-18),speed,dt);}
+function getInput(){let x=0,y=0;if(keys.has('ArrowLeft')||keys.has('a')||keys.has('A')||touchDirs.has('left'))x--;if(keys.has('ArrowRight')||keys.has('d')||keys.has('D')||touchDirs.has('right'))x++;if(keys.has('ArrowUp')||keys.has('w')||keys.has('W')||touchDirs.has('up'))y--;if(keys.has('ArrowDown')||keys.has('s')||keys.has('S')||touchDirs.has('down'))y++;const n=Math.hypot(x,y)||1;return{x:x/n,y:y/n,rawX:x,rawY:y};}
+function supportOffsets(i){return [145,185,185,145][i]||185;}
+function supportLat(i){return [-330,-160,160,330][i]||0;}
+function teamSupport(team,c,side,dt,excludeTarget=null){
+ const dir=attackDir(side),supports=team.filter(p=>p!==c&&p!==excludeTarget).sort((a,b)=>a.id-b.id);
+ supports.forEach((p,i)=>{const tx=c.x-dir*supportOffsets(i),ty=clamp(c.y+supportLat(i),T+28,B-28);targetAt(p,tx,ty,128,dt);});
+}
+// Defenders press forward while the carrier is in front of them. If the carrier breaks the line,
+// they turn and chase from behind instead of freezing at their original line position.
+function setupDefenseAI(defTeam,c,attSide,dt){
+ const dir=attackDir(attSide);
+ defTeam.forEach((p,i)=>{
+  const gap=dir*(p.x-c.x); // positive: defender is still ahead of the carrier
+  let tx,ty,speed;
+  if(gap>28){
+   // Press up to a short distance in front of the carrier, keeping a broad defensive line.
+   tx=c.x+dir*(20+Math.min(10,Math.abs(i-2)*3));
+   ty=clamp(c.y+rowOffsets[i]*.9,T+25,B-25);
+   speed=112;
+  }else{
+   // The attacker has beaten this defender: chase the carrier from behind.
+   // Keep some width, but bring the line closer to the carrier's running lane.
+   tx=c.x-dir*(20+i*5);
+   ty=clamp(c.y+rowOffsets[i]*.42,T+25,B-25);
+   speed=120; // still a little slower than the player's normal running speed
+  }
+  targetAt(p,tx,ty,speed,dt);
+ });
+}
+
+
+function resetMovement(){us.concat(them).forEach(p=>{p.vx=0;p.vy=0;p.stun=0;});}
+function startMatch(){
+ initTeams();running=true;paused=false;ended=false;state='play';possession='us';phase='attack';timeLeft=120;score=0;tries=0;conceded=0;stamina=100;dashHeld=false;dashCooldown=0;passCooldown=.3;tackleCooldown=.4;stepCooldown=0;stepTime=0;cpuPassTimer=3.2;cpuLaneTimer=0;cpuLane=CY;toast='キックオフ！ラインを見て走ろう！';toastTimer=1.8;celebrate=0;halfFlash=0;setPiece=null;passFlight=null;ballOnGround={x:FW/2,y:CY};lineX=FW/2-100;lineCenterX=FW/2;lineCenterY=CY;cameraX=FW/2;cameraY=CY;cameraReady=true;lineShift=0;lineOffset=58;beginSetPiece('us','kickoff','キックオフ！仲間が走って陣形を作る…',FW/2,CY,2.1);$('overlay').classList.add('hidden');$('pauseBtn').textContent='⏸ 休憩';updateHud();lastTime=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+}
+function finishMatch(){running=false;ended=true;state='end';$('overlay').classList.remove('hidden');$('overlayTitle').textContent='ノーサイド！ 🏉';$('overlayText').innerHTML=`試合終了！<br><b style="font-size:23px;color:#e87932">${tries}トライ！ ${score}点！</b><br>相手のトライ：${conceded}<br>${tries>conceded?'攻守の切り替えがよかった！':tries===conceded?'いい勝負！もう一回！':'次はラインとパスを工夫しよう！'}<br>もう一試合いく？`;$('startBtn').textContent='もう一試合！';}
+function setTarget(p,x,y){p.tx=clamp(x,L+15,R-15);p.ty=clamp(y,T+18,B-18);}
+function beginSetPiece(nextOwner,kind,message,x,y,duration){if(!running)return;state=kind==='ruck'?'ruck':'restart';passFlight=null;us.concat(them).forEach(p=>p.hasBall=false);x=clamp(x,L+24,R-24);y=clamp(y,T+22,B-22);ballOnGround={x,y};possession=nextOwner;setPiece={kind,owner:nextOwner,x,y,time:duration,total:duration,elapsed:0,taker:null};setPieceTargets(nextOwner);resetMovement();say(message,duration);playTone(kind==='ruck'?190:390,.13,kind==='ruck'?'triangle':'sine',.04,kind==='ruck'?-55:100);updateHud();}
+function setPieceTargets(owner){const sideTeam=teamOf(owner),def=enemyOf(owner),dir=attackDir(owner),x=setPiece.x,y=setPiece.y;let taker=[...sideTeam].sort((a,b)=>dist(a,{x,y})-dist(b,{x,y}))[0];setPiece.taker=taker;setPiece.owner=owner;sideTeam.forEach(p=>p.hasBall=false);const supports=sideTeam.filter(p=>p!==taker).sort((a,b)=>a.id-b.id);supports.forEach((p,i)=>setTarget(p,x-dir*supportOffsets(i),y+supportLat(i)));setTarget(taker,x,y);const defX=clamp(x+dir*100,L+35,R-35);def.forEach((p,i)=>setTarget(p,defX,clamp(y+rowOffsets[i],T+22,B-22)));lineX=defX;lineCenterX=defX;lineCenterY=y;lineShift=0;lineOffset=58;}
+function updateSetPiece(dt){
+ if(!setPiece)return;
+ const sp=setPiece;
+ sp.elapsed+=dt;
+ sp.time=Math.max(0,sp.time-dt);
+ const team=teamOf(sp.owner),def=enemyOf(sp.owner),dir=attackDir(sp.owner),t=sp.taker;
+ // After a try, both sides sprint back toward the restart formation. They keep running; nobody is teleported.
+ // A kick-off reset uses a higher line-up speed so the formation can be ready in about three seconds.
+ const lineUpSpeed=sp.kind==='kickoff'?455:115;
+ const defenseLineSpeed=sp.kind==='kickoff'?430:112;
+ team.forEach(p=>{
+  const supportList=team.filter(a=>a!==t).sort((a,b)=>a.id-b.id);
+  const index=supportList.indexOf(p);
+  const tx=p===t?sp.x:sp.x-dir*supportOffsets(index);
+  const ty=p===t?sp.y:sp.y+supportLat(index);
+  moveTowards(p,tx,ty,lineUpSpeed,dt);
+ });
+ const defX=sp.x+dir*100;
+ def.forEach((p,i)=>moveTowards(p,defX,clamp(sp.y+rowOffsets[i],T+22,B-22),defenseLineSpeed,dt));
+ // Restart only after the timer has expired AND all players have actually reached their assigned line spots.
+ const settled=[...us,...them].every(p=>Math.hypot(p.x-p.tx,p.y-p.ty)<28);
+ if(sp.time<=0&&settled)releaseSetPiece();
+}
+function releaseSetPiece(){if(!setPiece)return;const sp=setPiece,team=teamOf(sp.owner);let taker=sp.taker;if(!taker)taker=[...team].sort((a,b)=>dist(a,{x:sp.x,y:sp.y})-dist(b,{x:sp.x,y:sp.y}))[0];team.forEach(p=>p.hasBall=false);taker.hasBall=true;possession=sp.owner;state='play';ballOnGround={x:taker.x,y:taker.y};setPiece=null;passFlight=null;passCooldown=.45;tackleCooldown=.45;cpuPassTimer=2.7;cpuLaneTimer=0;lineX=clamp(taker.x+attackDir(possession)*100,L+25,R-25);lineCenterX=lineX;lineCenterY=taker.y;lineOffset=58;receiverId=team.filter(p=>p!==taker).sort((a,b)=>a.id-b.id)[0]?.id??taker.id;say(sp.kind==='ruck'?'ラックから再開！ボールを動かそう':sp.kind==='kickoff'?'キックオフ！プレー再開！':sp.kind==='lineout'?'ラインアウト！プレー再開！':sp.kind==='halftime'?'後半スタート！':'反則後、プレー再開！',1.1);playTone(520,.08,'sine',.035,120);updateHud();}
+function changeToHalf(){if(phase!=='attack')return;phase='defense';halfFlash=2.7;say('ハーフタイム！後半はディフェンス！',2.2);beginSetPiece('them','halftime','後半スタート！守備ラインを作ろう',FW/2,CY,2.3);updateHud();}
+function changePossessionOnTackle(tacklerSide,c,message){beginSetPiece(tacklerSide,'ruck',message,c.x,c.y,1.65);}
+function boundaryCheck(c,side,dir){if(c.y<T+5||c.y>B-5){const y=clamp(c.y,T+22,B-22);beginSetPiece(opposing(side),'lineout','🚩 タッチ！相手ボールでラインアウト',c.x,y,2.0);return true;}return false;}
+function scoreTry(side){if(state==='restart'||state==='ruck')return;if(side==='us'){tries++;score+=5;celebrate=1.9;say('🏉 トライ！！ +5点！陣形を作り直そう',2.2);playTone(520,.12,'sine',.055,220);setTimeout(()=>playTone(760,.2,'sine',.05,260),90);setTimeout(()=>playTone(980,.25,'sine',.045,210),180);beginSetPiece('them','kickoff','🎉 トライ！両チームがラインを整えています…',FW/2,CY,3.0);}else{conceded++;say('相手のトライ…。キックオフから立て直そう',2.3);playTone(180,.24,'triangle',.055,-70);beginSetPiece('us','kickoff','こちらのキックオフ準備中…両チームがラインを整えています…',FW/2,CY,3.0);}updateHud();}
+function activateStep(){if(!running||paused||state!=='play'||possession!=='us'||stepCooldown>0||!carrier(us))return;const inp=getInput();let x=-inp.y,y=inp.x;if(Math.abs(inp.x)+Math.abs(inp.y)<.1){x=0;y=(carrier(us).y<CY)?1:-1;}stepDX=x;stepDY=y;stepTime=.28;stepCooldown=2.2;stamina=Math.max(0,stamina-7);say('🌀 サイドステップ！',.65);playTone(600,.07,'sine',.035,300);}
+function moveUserCarrier(c,dt,duringPass=false){
+ const inp=getInput(),fast=(keys.has('Shift')||dashHeld)&&stamina>1;
+ let speed=(fast?178:128)*(duringPass?.82:1);
+ if(fast){stamina=Math.max(0,stamina-30*dt);dashCooldown=.12;}else stamina=Math.min(100,stamina+19*dt);
+ let dx=inp.x,dy=inp.y;
+ if(!duringPass&&stepTime>0){speed+=155;dx=stepDX;dy=stepDY;stepTime=Math.max(0,stepTime-dt);c.stepInvuln=.14;}
+ else c.stepInvuln=Math.max(0,(c.stepInvuln||0)-dt);
+ const rawX=c.x+dx*speed*dt,rawY=c.y+dy*speed*dt;
+ if(!duringPass&&(rawY<T+5||rawY>B-5)){
+  c.x=clamp(rawX,L+15,R-15);c.y=clamp(rawY,T+5,B-5);c.vx=dx*speed;c.vy=dy*speed;c.anim+=speed*dt*.075;
+  beginSetPiece('them','lineout','🚩 タッチ！相手ボールでラインアウト',c.x,clamp(c.y,T+22,B-22),2.0);return false;
+ }
+ c.x=clamp(rawX,L+18,R-18);c.y=clamp(rawY,T+8,B-8);c.vx=dx*speed;c.vy=dy*speed;
+ if(Math.abs(dx)+Math.abs(dy)>.01)c.anim+=speed*dt*.075;
+ if(!duringPass&&((attackDir('us')>0&&c.x>=TRY_R)||(attackDir('us')<0&&c.x<=TRY_L))){scoreTry('us');return false;}
+ return true;
+}
+function updateHumanAttack(dt,oldPass=false){const c=carrier(us)||passFlight?.oldCarrier;if(!c)return;const ok=moveUserCarrier(c,dt,oldPass);if(!ok||state!=='play')return;teamSupport(us,c,'us',dt,oldPass?passFlight?.target:null);setupDefenseAI(them,c,'us',dt);if(!oldPass){const nearest=them.reduce((a,b)=>dist(a,c)<dist(b,c)?a:b);const radius=c.stepInvuln>0?15:20;if(nearest&&dist(nearest,c)<radius&&tackleCooldown<=0){tackleCooldown=1.0;changePossessionOnTackle('them',c,'💥 タックル！ラックでラインを整える…');playTone(150,.16,'triangle',.06,-65);}}}
+function chooseCpuLane(c){
+ const candidates=[T+55,T+175,T+290,CY,B-290,B-175,B-55];let best=CY,bestScore=-1e9;
+ for(const y of candidates){let nearest=999;for(const p of us){const dx=Math.max(0,Math.abs(p.x-c.x)-35),d=Math.hypot(dx,p.y-y);nearest=Math.min(nearest,d);}const s=nearest-Math.abs(c.y-y)*.12+Math.random()*10;if(s>bestScore){bestScore=s;best=y;}}
+ return best;
+}
+function cpuPass(){
+ const c=carrier(them);if(!c||state!=='play')return;const dir=attackDir('them');
+ const legal=them.filter(p=>p!==c&&dir*(p.x-c.x)<-20);
+ if(!legal.length){cpuPassTimer=2.3;return;}
+ legal.sort((a,b)=>dist(a,c)-dist(b,c));launchPass('them',legal[0],true);cpuPassTimer=3+Math.random()*1.7;
+}
+function updateCpuCarrier(c,dt,duringPass=false){
+ cpuLaneTimer-=dt;if(cpuLaneTimer<=0){cpuLane=chooseCpuLane(c);cpuLaneTimer=.85+Math.random()*.45;}
+ const dir=attackDir('them'),goalY=clamp(cpuLane,T+20,B-20),dy=goalY-c.y,speed=duringPass?88:108;
+ const stepY=clamp(dy,-82*dt,82*dt),rawY=c.y+stepY,nextX=c.x+dir*speed*dt;
+ if(!duringPass&&(rawY<T+5||rawY>B-5)){
+  c.y=clamp(rawY,T+5,B-5);c.x=clamp(nextX,L+15,R-15);c.vx=dir*speed;c.vy=stepY/Math.max(dt,.001);
+  beginSetPiece('us','lineout','🚩 相手がタッチ！こちらのボールでラインアウト',c.x,clamp(c.y,T+25,B-25),2.0);return false;
+ }
+ c.y=clamp(rawY,T+8,B-8);c.x=clamp(nextX,L+18,R-18);c.vx=dir*speed;c.vy=stepY/Math.max(dt,.001);c.anim+=speed*dt*.075;
+ if(!duringPass){teamSupport(them,c,'them',dt);updateUserDefenseLine(dt,c);if((dir>0&&c.x>=TRY_R)||(dir<0&&c.x<=TRY_L)){scoreTry('them');return false;}}
+ return true;
+}
+function updateUserDefenseLine(dt,c){
+ const inp=getInput();
+ // The player controls the defensive line in both directions. No automatic retreat:
+ // if no key is pressed, the line holds; pressing toward the attacker rushes the whole line.
+ const moveSpeed=150;
+ lineCenterX=clamp(lineCenterX+inp.rawX*moveSpeed*dt,L+25,R-25);
+ lineCenterY=clamp(lineCenterY+inp.rawY*moveSpeed*dt,T+375,B-375);
+ us.forEach((p,i)=>{
+  const tx=lineCenterX;
+  const ty=clamp(lineCenterY+rowOffsets[i],T+22,B-22);
+  moveTowards(p,tx,ty,136,dt);
+ });
+ lineX=lineCenterX;
+}
+function launchPass(side,target,fromCpu=false){const team=teamOf(side),c=carrier(team);if(!c||!target||state!=='play')return;const dir=attackDir(side);if(dir*(target.x-c.x)>-9){beginSetPiece(opposing(side),'penalty','📣 スローフォワード！相手ボール',c.x,c.y,1.85);return;}team.forEach(p=>p.hasBall=false);const d=dist(c,target);passFlight={side,from:{x:c.x,y:c.y},target,oldCarrier:c,t:0,duration:clamp(d/255,.38,.9),fromCpu,landing:{x:clamp(target.x+attackDir(side)*82,L+18,R-18),y:clamp(target.y,T+18,B-18)}};state='pass';passCooldown=.56;say('後ろへパス！走り込んでキャッチ！',.7);playTone(380,.09,'sine',.035,160);}
+function sidePassTarget(side){
+ const c=carrier(us);if(!c)return null;const dir=attackDir('us'),sign=side==='left'?-1:1;
+ const options=us.filter(p=>p!==c);
+ options.sort((a,b)=>{
+  const score=p=>{
+   const sideWrong=sign*(p.y-c.y)<20?900:0;
+   const forward=dir*(p.x-c.x)>-10?1200:0;
+   return Math.abs(p.y-(c.y+sign*205))+Math.abs(p.x-(c.x-dir*105))*.42+sideWrong+forward;
+  };
+  return score(a)-score(b);
+ });
+ return options[0]||null;
+}
+function passToSide(side){
+ if(!running||paused||state!=='play'||passCooldown>0||possession!=='us')return;
+ const c=carrier(us);if(!c)return;const target=sidePassTarget(side);if(!target)return;
+ const dir=attackDir('us');
+ if(dir*(target.x-c.x)>-9){say('その味方は前にいる！ラインが後ろに来るのを待とう',1.1);return;}
+ receiverId=target.id;launchPass('us',target);updateHud();
+}
+function passBall(){passToSide('right');}
+function cycleReceiver(){passToSide('left');}
+
+function updatePass(dt){
+ const pf=passFlight;if(!pf)return;const c=pf.oldCarrier,team=teamOf(pf.side);
+ if(pf.side==='us')moveUserCarrier(c,dt,true);else updateCpuCarrier(c,dt,true);
+ if(state!=='pass'||passFlight!==pf)return;
+ teamSupport(team,c,pf.side,dt,pf.target);
+ if(pf.side==='us')setupDefenseAI(them,c,'us',dt);else updateUserDefenseLine(dt,c);
+ // The receiver keeps moving to meet the pass; neither player nor ball teleports.
+ moveTowards(pf.target,pf.landing.x,pf.landing.y,126,dt);
+ pf.t+=dt;const k=clamp(pf.t/pf.duration,0,1);
+ const bX=pf.from.x+(pf.target.x-pf.from.x)*k,bY=pf.from.y+(pf.target.y-pf.from.y)*k-Math.sin(k*Math.PI)*24;ballOnGround={x:bX,y:bY};
+ if(pf.t>=pf.duration){
+  if(dist(pf.target,{x:bX,y:bY})>28){beginSetPiece(opposing(pf.side),'turnover','パスがつながらない！相手ボール',bX,bY,1.5);return;}
+  pf.target.hasBall=true;possession=pf.side;state='play';passFlight=null;ballOnGround={x:pf.target.x,y:pf.target.y};receiverId=team.filter(p=>p!==pf.target).sort((a,b)=>a.id-b.id)[0]?.id??pf.target.id;
+  say('🏉 キャッチ！前進！',.75);playTone(620,.07,'sine',.025,100);updateHud();
+ }
+}
+function tryTackle(){if(!running||paused||state!=='play'||possession!=='them'||tackleCooldown>0)return;const c=carrier(them);if(!c)return;const nearest=us.reduce((a,b)=>dist(a,c)<dist(b,c)?a:b);const d=dist(nearest,c);if(d<=58){tackleCooldown=1.15;changePossessionOnTackle('us',c,'💪 ナイスタックル！ラックでラインを整える…');playTone(165,.15,'triangle',.06,-55);}else{tackleCooldown=.32;say('あと少し近づいてからタックル！',.8);playTone(250,.06,'sine',.025,-40);}}
+function updatePlay(dt){if(possession==='us'){updateHumanAttack(dt,false);}else{const c=carrier(them);if(!c)return;const ok=updateCpuCarrier(c,dt,false);if(!ok)return;const touching=us.find(p=>dist(p,c)<19);if(touching&&tackleCooldown<=0){tackleCooldown=1.05;changePossessionOnTackle('us',c,'💪 自動タックル！ラックでラインを整える…');return;}cpuPassTimer-=dt;if(cpuPassTimer<=0&&(attackDir('them')>0?c.x<TRY_R-70:c.x>TRY_L+70)){const closest=us.reduce((a,b)=>dist(a,c)<dist(b,c)?a:b);if(dist(closest,c)<125||Math.random()<.28)cpuPass();else cpuPassTimer=1.1;}}}
+function update(dt){if(!running||paused)return;timeLeft-=dt;dashCooldown=Math.max(0,dashCooldown-dt);passCooldown=Math.max(0,passCooldown-dt);tackleCooldown=Math.max(0,tackleCooldown-dt);stepCooldown=Math.max(0,stepCooldown-dt);toastTimer=Math.max(0,toastTimer-dt);celebrate=Math.max(0,celebrate-dt);halfFlash=Math.max(0,halfFlash-dt);if(timeLeft<=0){timeLeft=0;updateHud();finishMatch();return;}if(phase==='attack'&&timeLeft<=60)changeToHalf();if(state==='ruck'||state==='restart')updateSetPiece(dt);else if(state==='pass')updatePass(dt);else if(state==='play')updatePlay(dt);updateHud();}
+function drawField(){
+ // The pitch is much larger than the camera window; the camera follows the ball carrier.
+ ctx.fillStyle='#72d35e';ctx.fillRect(0,0,FW,FH);
+ for(let i=0;i<20;i++){ctx.fillStyle=i%2?'#7cde67':'#6bcf58';ctx.fillRect(i*(FW/20),T,FW/20,B-T);}
+ ctx.fillStyle='#b1eb7a';ctx.fillRect(0,T,TRY_L,B-T);ctx.fillRect(TRY_R,T,FW-TRY_R,B-T);
+ ctx.strokeStyle='#ffffffc7';ctx.lineWidth=3;ctx.strokeRect(L,T,R-L,B-T);
+ ctx.fillStyle='#ffe98a';ctx.fillRect(TRY_L-3,T,6,B-T);ctx.fillRect(TRY_R-3,T,6,B-T);
+ ctx.strokeStyle='#ffffffa8';ctx.lineWidth=2;
+ for(let x=L+180;x<R-120;x+=180){ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,B);ctx.stroke();}
+ ctx.setLineDash([7,10]);for(let x=L+90;x<R-60;x+=180){ctx.beginPath();ctx.moveTo(x,T);ctx.lineTo(x,B);ctx.stroke();}ctx.setLineDash([]);
+ ctx.textAlign='center';ctx.font='1000 18px system-ui';ctx.fillStyle='#287148';ctx.fillText('TRY ZONE 🌼',TRY_L/2,T+28);ctx.fillText('TRY ZONE 🌼',(TRY_R+FW)/2,T+28);
+ ctx.fillStyle='#fff';ctx.font='900 14px system-ui';ctx.fillText('DEFENCE',FW*.2,CY-280);ctx.fillText('HALFWAY',FW*.5,CY-280);ctx.fillText('ATTACK',FW*.8,CY-280);
+ ctx.font='800 12px system-ui';ctx.textAlign='left';ctx.fillText('タッチライン',L+4,B+24);ctx.textAlign='right';ctx.fillText('タッチライン',R-4,B+24);
+ if(possession==='them'&&(state==='play'||state==='pass')){ctx.save();ctx.strokeStyle='#ffe36e';ctx.lineWidth=3;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(lineX,T);ctx.lineTo(lineX,B);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#2c643e';ctx.font='900 13px system-ui';ctx.textAlign='left';ctx.fillText('前進する守備ライン',lineX+7,T+45);ctx.restore();}
+ if(possession==='us'&&(state==='play'||state==='pass')){const c=passFlight?.oldCarrier||carrier(us);if(c){ctx.save();ctx.globalAlpha=.18;ctx.fillStyle='#fff1a1';const mark=clamp(c.x+attackDir('us')*60,TRY_L,TRY_R);ctx.fillRect(mark,T,4,B-T);ctx.restore();}}
+}
+function drawPlayer(p){ctx.fillStyle='#2b603d30';ctx.beginPath();ctx.ellipse(p.x+2,p.y+10,14,7,0,0,Math.PI*2);ctx.fill();const moving=Math.hypot(p.vx,p.vy)>8,leg=moving?Math.sin(p.anim)*5:0;ctx.strokeStyle='#394c3b';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p.x-4,p.y+8);ctx.lineTo(p.x-7-leg,p.y+19);ctx.moveTo(p.x+4,p.y+8);ctx.lineTo(p.x+7+leg,p.y+19);ctx.stroke();ctx.fillStyle=p.color;ctx.beginPath();ctx.ellipse(p.x,p.y,12,15,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();ctx.strokeStyle='#fff5d7';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(p.x-6,p.y-4);ctx.lineTo(p.x+6,p.y+4);ctx.stroke();ctx.strokeStyle='#ffd5a8';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(p.x-10,p.y-2);ctx.lineTo(p.x-15-leg*.4,p.y+4);ctx.moveTo(p.x+10,p.y-2);ctx.lineTo(p.x+15+leg*.4,p.y+4);ctx.stroke();ctx.fillStyle='#ffd5a8';ctx.beginPath();ctx.arc(p.x,p.y-13,8,0,Math.PI*2);ctx.fill();ctx.fillStyle=p.side==='us'?'#276744':'#194f9b';ctx.beginPath();ctx.arc(p.x,p.y-15,7.5,Math.PI,Math.PI*2);ctx.fill();ctx.fillStyle='#39434b';ctx.beginPath();ctx.arc(p.x-3,p.y-13,1.1,0,Math.PI*2);ctx.arc(p.x+3,p.y-13,1.1,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 9px system-ui';ctx.textAlign='center';ctx.fillText(p.id+1,p.x,p.y+4);if(possession==='us'&&state==='play'&&p.side==='us'&&p!==carrier(us)&&(p.id===leftReceiverId||p.id===rightReceiverId)){ctx.strokeStyle=p.id===leftReceiverId?'#55eeff':'#ffe36e';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,22+Math.sin(performance.now()/130)*2,0,Math.PI*2);ctx.stroke();ctx.fillStyle=p.id===leftReceiverId?'#185a79':'#77551d';ctx.font='1000 12px system-ui';ctx.textAlign='center';ctx.fillText(p.id===leftReceiverId?'E 左':'R 右',p.x,p.y-29);}if(p.hasBall)drawBall(p.x+(p.side==='us'?16:-16),p.y-3,.9);}
+function drawBall(x,y,scale=1){ctx.save();ctx.translate(x,y);ctx.rotate(-.35);ctx.scale(scale,scale);ctx.fillStyle='#9b5d30';ctx.beginPath();ctx.ellipse(0,0,9,5.5,0,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff6de';ctx.lineWidth=1.4;ctx.stroke();ctx.beginPath();ctx.moveTo(-3,0);ctx.lineTo(3,0);ctx.stroke();ctx.restore();}
+function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ const follow=(state==='pass'&&passFlight)?ballOnGround:(ownerCarrier()||ballOnGround);
+ const cssWidth=canvas.clientWidth||W,uiScale=Math.max(1,W/cssWidth),zoom=cssWidth<620?.84:.86;
+ const targetCamX=clamp(follow.x,W/(2*zoom),FW-W/(2*zoom));
+ const targetCamY=clamp(follow.y,H/(2*zoom),FH-H/(2*zoom));
+ if(!cameraReady){cameraX=targetCamX;cameraY=targetCamY;cameraReady=true;}
+ const camEase=1-Math.exp(-Math.min(.05,frameDt||.016)*2.7);
+ cameraX+= (targetCamX-cameraX)*camEase;cameraY+=(targetCamY-cameraY)*camEase;
+ const camX=cameraX,camY=cameraY;
+ ctx.save();ctx.translate(W/2-camX*zoom,H/2-camY*zoom);ctx.scale(zoom,zoom);
+ drawField();
+ leftReceiverId=(state==='play'&&possession==='us')?(sidePassTarget('left')?.id??-1):-1;rightReceiverId=(state==='play'&&possession==='us')?(sidePassTarget('right')?.id??-1):-1;const all=[...us,...them].sort((a,b)=>a.y-b.y);all.forEach(drawPlayer);
+ if(state==='pass'&&passFlight){const pf=passFlight,k=clamp(pf.t/pf.duration,0,1),t=pf.target,bx=pf.from.x+(t.x-pf.from.x)*k,by=pf.from.y+(t.y-pf.from.y)*k-Math.sin(k*Math.PI)*25;ctx.strokeStyle='#fff8ba99';ctx.lineWidth=2;ctx.setLineDash([4,7]);ctx.beginPath();ctx.moveTo(pf.from.x,pf.from.y);ctx.lineTo(t.x,t.y);ctx.stroke();ctx.setLineDash([]);drawBall(bx,by,1.12);}
+ if(state==='ruck'||state==='restart'){drawBall(ballOnGround.x,ballOnGround.y,1.2);ctx.strokeStyle='#fff9b7';ctx.lineWidth=3;ctx.beginPath();ctx.arc(ballOnGround.x,ballOnGround.y,22+Math.sin(performance.now()/110)*2,0,Math.PI*2);ctx.stroke();}
+ ctx.restore();
+ // Score/phase announcements are drawn in screen space so text stays legible on phones.
+ const boxW=W*.84,boxH=42*uiScale,boxX=(W-boxW)/2,boxY=8*uiScale;
+ if(state==='ruck'||state==='restart'){ctx.save();ctx.fillStyle='#fff9e8';roundRect(ctx,boxX,boxY,boxW,boxH,14*uiScale);ctx.fill();ctx.strokeStyle='#f1dba5';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#286342';ctx.textAlign='center';ctx.font=`900 ${15*uiScale}px system-ui`;const label=state==='ruck'?'ラック：全員が陣形へ走る':setPiece?.kind==='kickoff'?'キックオフ準備…':setPiece?.kind==='lineout'?'ラインアウト準備…':setPiece?.kind==='halftime'?'ハーフタイム…':'反則後の再開準備…';ctx.fillText(`${label} ${(setPiece?.time||0)>0?(setPiece.time.toFixed(1)+'s'):'ライン確認中…'}`,W/2,boxY+boxH*.65);ctx.restore();}
+ if(celebrate>0){ctx.save();ctx.globalAlpha=Math.min(1,celebrate);ctx.fillStyle='#fff0a0';ctx.font=`1000 ${43*uiScale}px system-ui`;ctx.textAlign='center';ctx.fillText('TRY!! 🎉',W/2,H*.5);ctx.restore();for(let i=0;i<24;i++){ctx.fillStyle=['#fff','#ff8a51','#ff6caa','#fff07b','#5ab9ff'][i%5];ctx.fillRect((i*89+Math.sin(i+celebrate*8)*20)%W,(i*61+(1.8-celebrate)*300)%H,7*uiScale,11*uiScale);}}
+ if(toastTimer>0){ctx.save();ctx.globalAlpha=Math.min(1,toastTimer*2);ctx.fillStyle='#fff9e8';roundRect(ctx,boxX,boxY,boxW,boxH,14*uiScale);ctx.fill();ctx.strokeStyle='#f1dba5';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#286342';ctx.font=`900 ${15*uiScale}px system-ui`;ctx.textAlign='center';ctx.fillText(toast,W/2,boxY+boxH*.65);ctx.restore();}
+ if(halfFlash>0){ctx.save();ctx.globalAlpha=Math.min(.92,halfFlash*.5);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;const w=W*.84,h=100*uiScale,x=(W-w)/2,y=(H-h)/2;ctx.fillStyle='#fff9e8';roundRect(ctx,x,y,w,h,20*uiScale);ctx.fill();ctx.fillStyle='#276744';ctx.textAlign='center';ctx.font=`1000 ${24*uiScale}px system-ui`;ctx.fillText('後半：ディフェンス！',W/2,y+h*.4);ctx.font=`800 ${13*uiScale}px system-ui`;ctx.fillText('ラインを走って整え、相手を止めよう',W/2,y+h*.7);ctx.restore();}
+ if(paused&&running){ctx.fillStyle='#193d2d70';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff9e8';const w=250*uiScale,h=90*uiScale;roundRect(ctx,(W-w)/2,(H-h)/2,w,h,15*uiScale);ctx.fill();ctx.fillStyle='#276744';ctx.font=`1000 ${23*uiScale}px system-ui`;ctx.textAlign='center';ctx.fillText('ひと休み ☀️',W/2,H/2+8*uiScale);}
+}
+function loop(now){if(!running)return;const dt=Math.min(.04,(now-lastTime)/1000||0);lastTime=now;frameDt=dt;if(!paused)update(dt);draw();if(running)raf=requestAnimationFrame(loop);}
+function togglePause(){if(!running)return;paused=!paused;$('pauseBtn').textContent=paused?'▶ 再開':'⏸ 休憩';if(!paused)lastTime=performance.now();}
+$('startBtn').addEventListener('click',()=>{if(ended){$('startBtn').textContent='キックオフ！';$('overlayTitle').textContent='わいわいラグビー！';}startMatch();});$('pauseBtn').addEventListener('click',togglePause);$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊 SE ON':'🔇 SE OFF';if(soundOn)playTone(660,.1);});
+function capturePointer(el,e){try{el.setPointerCapture(e.pointerId);}catch(_){}}
+$('passBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);if(possession==='us')passToSide('right');else tryTackle();});$('targetBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);if(possession==='us')passToSide('left');});$('stepBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);activateStep();});
+$('dashBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);dashHeld=true;$('dashBtn').classList.add('active');});function releaseDash(e){dashHeld=false;$('dashBtn').classList.remove('active');}['pointerup','pointercancel','lostpointercapture'].forEach(type=>$('dashBtn').addEventListener(type,releaseDash));
+document.querySelectorAll('[data-dir]').forEach(btn=>{const dir=btn.dataset.dir,down=e=>{e.preventDefault();capturePointer(btn,e);touchDirs.add(dir);btn.classList.add('active');},up=e=>{e.preventDefault();touchDirs.delete(dir);btn.classList.remove('active');};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(type=>btn.addEventListener(type,up));});
+window.addEventListener('keydown',e=>{const k=e.key;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Shift'].includes(k))e.preventDefault();keys.add(k);if(!e.repeat&&(k===' ')){if(possession==='us')passToSide('right');else tryTackle();}if(!e.repeat&&(k==='e'||k==='E'))passToSide('left');if(!e.repeat&&(k==='r'||k==='R')){if(possession==='us')passToSide('right');}if(!e.repeat&&(k==='c'||k==='C'))activateStep();if(k==='Escape'&&!e.repeat)togglePause();});window.addEventListener('keyup',e=>keys.delete(e.key));window.addEventListener('blur',()=>{keys.clear();touchDirs.clear();dashHeld=false;document.querySelectorAll('.ctrl,.action').forEach(el=>el.classList.remove('active'));});document.addEventListener('visibilitychange',()=>{if(document.hidden&&running&&!paused)togglePause();});
+initTeams();updateHud();draw();
+})();
+</script></body></html>
