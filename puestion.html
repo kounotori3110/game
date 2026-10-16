@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>puestion</title>
+<style>
+body{
+text-align:center;
+}
+button{
+padding:10px 100px;
+margin-bottom:20px;
+background:#FFFFFF;
+}
+#oh{
+background:red;
+color:white
+}
+#my{
+background:blue;
+color:white
+}
+</style>
+</head>
+<body>
+<h1>問題</h1>
+<p>1+1=?<br>?の値を選べ</p>
+<button onclick="ans()">2</button>
+<br>
+<button onclick="no()">3</button>
+<h1 id="oh"></h1>
+<h1 id="my"></h1>
+<script>
+function ans(){
+document.getElementById("oh").textContent="正解";
+document.getElementById("my").textContent="";
+}
+function no(){
+document.getElementById("my").textContent="不正解";
+document.getElementById("oh").textContent="";
+}
+</script>
+</body>
+</html>
