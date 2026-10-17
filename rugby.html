@@ -30,6 +30,51 @@ header{display:flex;align-items:center;justify-content:space-between;gap:8px;fle
 button, .fieldwrap, .dpad, .ctrl, .action{touch-action:none}
 @media(hover:none){button{-webkit-tap-highlight-color:transparent}}
 
+
+/* 横向きスマホ：ゲーム画面を主役にして、左右に操作系をまとめる */
+@media screen and (orientation:landscape) and (max-height:650px) and (max-width:1000px){
+ html,body{width:100%;height:100%;min-height:0;overflow:hidden}
+ body{padding:0}
+ .game{width:100%;max-width:none;height:100vh;height:100dvh;min-height:0;margin:0;padding: max(3px,env(safe-area-inset-top)) max(5px,env(safe-area-inset-right)) max(3px,env(safe-area-inset-bottom)) max(5px,env(safe-area-inset-left));display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:4px;overflow:hidden}
+ header{min-width:0;flex-wrap:nowrap;gap:6px;margin:0;min-height:22px}
+ .logo{font-size:clamp(17px,3.6vh,24px);letter-spacing:-.5px;white-space:nowrap;text-shadow:1px 2px 0 #fff}
+ .tag{font-size:clamp(9px,1.9vh,11px);padding:3px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .hud{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;min-width:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;margin:0;padding:1px 1px 3px}
+ .hud::-webkit-scrollbar{display:none}
+ .huditem{flex:0 0 auto;min-width:0;padding:3px 6px;border-radius:8px;box-shadow:0 2px 0 #cee1a4}
+ .huditem small{font-size:clamp(7px,1.45vh,9px);white-space:nowrap}
+ .huditem strong{font-size:clamp(11px,2.3vh,15px);white-space:nowrap}
+ .huditem.wide{min-width:83px}.huditem.wide strong{font-size:clamp(9px,1.9vh,12px)}
+ .smallbuttons{flex:0 0 auto;gap:3px;margin-left:auto}
+ .secondary{padding:3px 6px;font-size:clamp(8px,1.8vh,10px);white-space:nowrap;border-width:1px;border-radius:7px}
+ .fieldwrap{width:100%;height:100%;min-width:0;min-height:0;max-height:none;margin:0;border-width:2px;border-radius:10px;box-shadow:0 2px 0 #c6df9d;overflow:hidden}
+ canvas{width:100%;height:100%;min-width:0;min-height:0;aspect-ratio:auto;object-fit:fill}
+ .overlay{padding:5px}
+ .dialog{max-width:460px;max-height:100%;overflow:auto;padding:7px 11px;border-width:2px;border-radius:13px;box-shadow:0 3px 0 #23433330}
+ .dialog .hero{display:none}
+ .dialog h1{font-size:clamp(16px,3.2vh,22px);margin:1px 0 3px}
+ .dialog p{font-size:clamp(9px,1.7vh,11px);line-height:1.28;margin:3px 0 5px}
+ .dialog p:last-child{font-size:clamp(8px,1.45vh,9px)!important;line-height:1.2}
+ .bigbtn{font-size:clamp(11px,2.1vh,14px);min-width:120px;padding:6px 15px;border-radius:9px;box-shadow:0 2px 0 #d46b28}
+ .controls{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;min-width:0;margin:0;padding:3px 7px;gap:8px;border-radius:10px;border-width:1px;overflow:hidden}
+ .dpad{flex:0 0 auto;grid-template-columns:repeat(3,clamp(22px,3.4vh,29px));grid-template-rows:repeat(2,clamp(21px,3.2vh,27px));gap:2px}
+ .ctrl{min-width:0;min-height:0;padding:0;border-radius:6px;font-size:clamp(11px,1.9vh,15px);box-shadow:0 2px 0 #a7d78b}
+ .controlhint{display:none}
+ .actionbuttons{display:flex;flex:0 0 auto;justify-content:flex-end;gap:clamp(3px,.8vw,7px);width:auto;min-width:0}
+ .action{width:clamp(40px,7vh,52px);height:clamp(40px,7vh,52px);flex:0 0 auto;font-size:clamp(8px,1.55vh,10px);padding:2px;gap:1px;border-radius:50%;box-shadow:0 2px 0 #bd6b36}
+ .action span{font-size:clamp(15px,2.6vh,20px)}.action small{font-size:clamp(8px,1.45vh,9px);line-height:1}
+ #passBtn{box-shadow:0 2px 0 #2a62b6}#stepBtn{box-shadow:0 2px 0 #7e4eb8}
+ .rules{display:none}
+}
+@media screen and (orientation:landscape) and (max-height:420px) and (max-width:1000px){
+ .game{gap:2px;padding:2px max(4px,env(safe-area-inset-right)) 2px max(4px,env(safe-area-inset-left))}
+ .logo{font-size:16px}.tag{font-size:8px;padding:2px 5px}
+ .hud{gap:2px;padding-bottom:1px}.huditem{padding:2px 4px}.huditem small{font-size:7px}.huditem strong{font-size:11px}
+ .huditem.wide{min-width:75px}.secondary{font-size:8px;padding:2px 4px}
+ .controls{padding:2px 5px;gap:5px}.actionbuttons{gap:3px}.action{width:38px;height:38px;font-size:7px}.action span{font-size:14px}.action small{font-size:7px}
+ .dpad{grid-template-columns:repeat(3,22px);grid-template-rows:repeat(2,20px);gap:2px}
+}
+
 </style>
 </head>
 <body><div class="game">
@@ -46,9 +91,25 @@ button, .fieldwrap, .dpad, .ctrl, .action{touch-action:none}
 <script>
 (()=>{'use strict';
 const canvas=document.getElementById('field'),ctx=canvas.getContext('2d'),$=id=>document.getElementById(id);
-const W=900,H=560,FW=2400,FH=1200,L=40,R=2360,T=40,B=1160,TRY_L=145,TRY_R=2255,CY=600;
+let W=900,H=560;const FW=2400,FH=1200,L=40,R=2360,T=40,B=1160,TRY_L=145,TRY_R=2255,CY=600;
 const teamColors=['#ff9646','#ff719d','#ffe36e','#b47bf1','#ffbd82'],defColors=['#4e94f7','#64bbff','#4076d8','#8fbcff','#3769b8'];
 const keys=new Set(),touchDirs=new Set();
+function resizeCanvas(){
+ const rect=canvas.getBoundingClientRect();
+ if(!rect.width||!rect.height)return;
+ const nextW=Math.max(1,Math.round(rect.width)),nextH=Math.max(1,Math.round(rect.height));
+ if(nextW===W&&nextH===H&&canvas.width===nextW&&canvas.height===nextH)return;
+ W=nextW;H=nextH;
+ const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+ canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ cameraReady=false;
+ if(!running)draw();
+}
+const canvasResizeObserver=typeof ResizeObserver!=='undefined'?new ResizeObserver(()=>resizeCanvas()):null;
+if(canvasResizeObserver)canvasResizeObserver.observe(canvas);
+window.addEventListener('resize',resizeCanvas,{passive:true});
+window.addEventListener('orientationchange',()=>setTimeout(resizeCanvas,140),{passive:true});
 let us=[],them=[],running=false,paused=false,ended=false,state='menu',possession='us',phase='attack',timeLeft=120,score=0,tries=0,conceded=0,stamina=100;
 let dashHeld=false,dashCooldown=0,passCooldown=0,tackleCooldown=0,stepCooldown=0,stepTime=0,stepDX=0,stepDY=0,cpuPassTimer=3.8,cpuLaneTimer=0,cpuLane=CY;
 let toast='',toastTimer=0,celebrate=0,halfFlash=0,soundOn=true,audio=null,lastTime=0,raf=0,frameDt=0;
@@ -291,12 +352,19 @@ function draw(){
 }
 function loop(now){if(!running)return;const dt=Math.min(.04,(now-lastTime)/1000||0);lastTime=now;frameDt=dt;if(!paused)update(dt);draw();if(running)raf=requestAnimationFrame(loop);}
 function togglePause(){if(!running)return;paused=!paused;$('pauseBtn').textContent=paused?'▶ 再開':'⏸ 休憩';if(!paused)lastTime=performance.now();}
-$('startBtn').addEventListener('click',()=>{if(ended){$('startBtn').textContent='キックオフ！';$('overlayTitle').textContent='わいわいラグビー！';}startMatch();});$('pauseBtn').addEventListener('click',togglePause);$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊 SE ON':'🔇 SE OFF';if(soundOn)playTone(660,.1);});
+async function requestLandscapeIfSupported(){
+ const mobileLandscapeGame=window.matchMedia&&window.matchMedia('(pointer:coarse) and (max-width:1000px)').matches;
+ if(!mobileLandscapeGame)return;
+ try{if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});}catch(_){/* iOSや非対応ブラウザでは手動で横向きにする */}
+ try{if(screen.orientation&&screen.orientation.lock)await screen.orientation.lock('landscape');}catch(_){/* 対応していない端末は手動回転でプレイ可能 */}
+ setTimeout(resizeCanvas,120);
+}
+$('startBtn').addEventListener('click',()=>{requestLandscapeIfSupported();if(ended){$('startBtn').textContent='キックオフ！';$('overlayTitle').textContent='わいわいラグビー！';}startMatch();});$('pauseBtn').addEventListener('click',togglePause);$('soundBtn').addEventListener('click',()=>{soundOn=!soundOn;$('soundBtn').textContent=soundOn?'🔊 SE ON':'🔇 SE OFF';if(soundOn)playTone(660,.1);});
 function capturePointer(el,e){try{el.setPointerCapture(e.pointerId);}catch(_){}}
 $('passBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);if(possession==='us')passToSide('right');else tryTackle();});$('targetBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);if(possession==='us')passToSide('left');});$('stepBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);activateStep();});
 $('dashBtn').addEventListener('pointerdown',e=>{e.preventDefault();capturePointer(e.currentTarget,e);dashHeld=true;$('dashBtn').classList.add('active');});function releaseDash(e){dashHeld=false;$('dashBtn').classList.remove('active');}['pointerup','pointercancel','lostpointercapture'].forEach(type=>$('dashBtn').addEventListener(type,releaseDash));
 document.querySelectorAll('[data-dir]').forEach(btn=>{const dir=btn.dataset.dir,down=e=>{e.preventDefault();capturePointer(btn,e);touchDirs.add(dir);btn.classList.add('active');},up=e=>{e.preventDefault();touchDirs.delete(dir);btn.classList.remove('active');};btn.addEventListener('pointerdown',down);['pointerup','pointercancel','lostpointercapture'].forEach(type=>btn.addEventListener(type,up));});
 window.addEventListener('keydown',e=>{const k=e.key;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Shift'].includes(k))e.preventDefault();keys.add(k);if(!e.repeat&&(k===' ')){if(possession==='us')passToSide('right');else tryTackle();}if(!e.repeat&&(k==='e'||k==='E'))passToSide('left');if(!e.repeat&&(k==='r'||k==='R')){if(possession==='us')passToSide('right');}if(!e.repeat&&(k==='c'||k==='C'))activateStep();if(k==='Escape'&&!e.repeat)togglePause();});window.addEventListener('keyup',e=>keys.delete(e.key));window.addEventListener('blur',()=>{keys.clear();touchDirs.clear();dashHeld=false;document.querySelectorAll('.ctrl,.action').forEach(el=>el.classList.remove('active'));});document.addEventListener('visibilitychange',()=>{if(document.hidden&&running&&!paused)togglePause();});
-initTeams();updateHud();draw();
+resizeCanvas();initTeams();updateHud();draw();
 })();
 </script></body></html>
