@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>金田のモテ期は来るんだが？</title>
+<style>
+*{box-sizing:border-box}
+:root{--navy:#102b49;--pink:#ff4d9b;--blue:#6cc9ff;--paper:rgba(9,25,45,.88)}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;font-family:"Meiryo",system-ui,sans-serif;background:#bde8ff;color:white}
+button{font:inherit;cursor:pointer}
+#screen{position:relative;width:100%;height:100dvh;min-height:440px;overflow:hidden;background:linear-gradient(#70c8ff 0%,#d4f0ff 48%,#f8d5e3 100%)}
+#sceneBg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#topline{position:absolute;top:14px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:2}
+.badge{background:rgba(12,39,67,.78);border:1px solid rgba(255,255,255,.65);border-radius:999px;padding:7px 12px;font-weight:800;font-size:clamp(11px,1.8vw,14px);backdrop-filter:blur(5px)}
+#title{font-size:clamp(17px,3vw,27px);font-weight:1000;text-shadow:0 2px 5px #153c61}
+#characters{position:absolute;inset:0;pointer-events:none}
+.char{position:absolute;bottom:18%;height:min(73vh,690px);width:min(45vw,500px);filter:drop-shadow(0 14px 12px #18344b44);transition:opacity .25s,transform .25s}
+#kaneda{left:1%;height:min(65vh,570px);width:min(38vw,400px)}
+#yo{right:1%}
+#atsushi{right:1%;height:min(76vh,700px)}
+.char svg{height:100%;width:100%;overflow:visible}
+#who{position:absolute;left:16px;bottom:clamp(205px,27vh,260px);z-index:3;background:var(--pink);border:2px solid white;border-radius:9px;padding:6px 13px;font-weight:1000;font-size:clamp(14px,2vw,18px);box-shadow:0 3px 0 #a72862}
+#chat{position:absolute;z-index:4;left:12px;right:12px;bottom:12px;height:clamp(190px,26vh,245px);border:2px solid rgba(255,255,255,.88);border-radius:18px;background:var(--paper);box-shadow:0 8px 28px #142d4666;backdrop-filter:blur(12px);display:flex;flex-direction:column;padding:13px 15px 12px}
+#dialog{font-size:clamp(15px,2.2vw,21px);line-height:1.65;white-space:pre-line;overflow:auto;flex:1;padding:2px 2px 8px}
+#choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.choice{border:2px solid #c7eaff;background:#f9fdff;color:#153b5d;border-radius:12px;padding:10px 9px;font-weight:800;font-size:clamp(12px,1.7vw,15px);box-shadow:0 3px 0 #7cb6d9;min-height:44px}
+.choice:hover{background:#ffe5f1;border-color:#ff85b8}
+#bottomInfo{position:absolute;right:18px;bottom:clamp(220px,29vh,270px);z-index:3;background:rgba(12,39,67,.78);border:1px solid white;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:800}
+#start{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;text-align:center;background:linear-gradient(#123d5b55,#12243c99);padding:20px}
+.startcard{max-width:560px;width:100%;background:rgba(9,25,45,.86);border:2px solid white;border-radius:22px;padding:25px;box-shadow:0 15px 45px #12263e66}
+.startcard h1{font-size:clamp(28px,6vw,52px);line-height:1.15;color:#ff9bc5;text-shadow:2px 3px #102b49;margin:0 0 12px}
+.startcard p{line-height:1.8}
+#startBtn,#again{border:0;background:linear-gradient(90deg,#ff4d9b,#ff7ab5);color:white;border-radius:14px;padding:13px 24px;font-size:18px;font-weight:1000;box-shadow:0 4px 0 #a72862}
+#endcard{position:absolute;inset:0;z-index:9;display:none;align-items:center;justify-content:center;background:#081b2c99;padding:20px}
+#endinner{max-width:560px;width:100%;background:#fff8fc;color:#17344c;border:3px solid white;border-radius:20px;padding:24px;text-align:center}
+#endinner h2{color:#e83e8c;font-size:clamp(24px,5vw,38px)}
+#endText{white-space:pre-line;line-height:1.8}
+/* スマホ優先レイアウト */
+@media(max-width:650px){
+ html,body{height:100%;min-height:100%;overflow:hidden}
+ #screen{height:100dvh;min-height:0;width:100%;}
+ #topline{top:7px;left:7px;right:7px;gap:5px;align-items:flex-start}
+ #title{font-size:clamp(13px,4vw,17px);line-height:1.25;max-width:64%}
+ .badge{font-size:10px;padding:6px 8px;max-width:42%;text-align:center}
+ .char{bottom:39%;height:38vh;width:58vw;max-height:330px}
+ #kaneda{left:-8%;height:34vh;width:49vw;max-height:295px}
+ #yo,#atsushi{right:-7%}
+ #who{left:7px;bottom:calc(clamp(245px,42dvh,330px) + 7px);font-size:12px;padding:5px 8px}
+ #bottomInfo{right:7px;bottom:calc(clamp(245px,42dvh,330px) + 7px);font-size:10px;padding:5px 7px}
+ #chat{left:5px;right:5px;bottom:5px;height:clamp(245px,42dvh,330px);padding:8px;border-radius:14px;gap:4px}
+ #dialog{font-size:clamp(14px,3.8vw,16px);line-height:1.45;padding:1px 2px 4px;min-height:40px}
+ #choices{grid-template-columns:1fr;gap:5px}
+ .choice{padding:7px 8px;min-height:36px;font-size:13px;border-radius:10px;box-shadow:0 2px 0 #7cb6d9}
+ #start,#endcard{padding:10px;overflow:auto}
+ .startcard{padding:18px 14px;border-radius:17px;max-height:94dvh;overflow:auto}
+ .startcard h1{font-size:clamp(26px,8vw,38px)}
+ .startcard p{font-size:14px;line-height:1.6}
+ #startBtn,#again{font-size:16px;padding:11px 20px}
+ #endinner{padding:16px;max-height:94dvh;overflow:auto}
+}
+@media(max-width:380px){
+ #title{font-size:13px}
+ .badge{font-size:9px;padding:5px 6px}
+ #chat{height:clamp(255px,45dvh,345px)}
+ #who,#bottomInfo{bottom:calc(clamp(255px,45dvh,345px) + 7px)}
+ .char{bottom:41%;height:35vh}
+ #kaneda{height:31vh}
+ .choice{font-size:12px;min-height:34px;padding:6px}
+}
+@media(orientation:landscape) and (max-height:500px) and (max-width:900px){
+ #chat{height:48dvh;left:6px;right:6px;bottom:5px;padding:6px}
+ #dialog{font-size:12px;line-height:1.3}
+ #choices{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ .choice{font-size:11px;padding:5px;min-height:30px}
+ .char{height:66vh;bottom:48%;width:34vw}
+ #kaneda{height:57vh;width:28vw}
+ #who,#bottomInfo{bottom:calc(48dvh + 7px);font-size:10px}
+}
+@media(max-height:550px) and (min-width:651px){
+ .char{height:68vh;bottom:28%}#kaneda{height:60vh}
+ #chat{height:190px}#who,#bottomInfo{bottom:205px}
+}
+</style>
+</head>
+<body>
+<div id="screen">
+<svg id="sceneBg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+ <defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#65c7ff"/><stop offset=".65" stop-color="#d8f3ff"/><stop offset="1" stop-color="#ffe2ec"/></linearGradient>
+  <linearGradient id="building" x2="0" y2="1"><stop stop-color="#f8fbff"/><stop offset="1" stop-color="#b9d8e9"/></linearGradient>
+  <linearGradient id="ground" x2="0" y2="1"><stop stop-color="#8bcf8e"/><stop offset="1" stop-color="#47976e"/></linearGradient>
+ </defs>
+ <rect width="1600" height="900" fill="url(#sky)"/>
+ <g fill="#fff" opacity=".8"><ellipse cx="210" cy="130" rx="115" ry="26"/><ellipse cx="280" cy="113" rx="70" ry="35"/><ellipse cx="1210" cy="160" rx="135" ry="24"/><ellipse cx="1280" cy="142" rx="80" ry="36"/></g>
+ <g stroke="#86aec6" stroke-width="5"><path d="M0 360 L1600 360"/><path d="M0 500 L1600 500"/></g>
+ <g fill="url(#building)" stroke="#91b8cf" stroke-width="4">
+  <path d="M80 245 L590 245 L590 580 L80 580Z"/><path d="M630 285 L1010 285 L1010 560 L630 560Z"/><path d="M1050 230 L1510 230 L1510 575 L1050 575Z"/>
+ </g>
+ <g fill="#70b7dc" stroke="#fff" stroke-width="4">
+  <path d="M120 285h85v82h-85z M235 285h85v82h-85z M350 285h85v82h-85z M465 285h85v82h-85z"/>
+  <path d="M120 405h85v82h-85z M235 405h85v82h-85z M350 405h85v82h-85z M465 405h85v82h-85z"/>
+  <path d="M675 325h72v75h-72z M778 325h72v75h-72z M881 325h72v75h-72z"/>
+  <path d="M1095 275h75v85h-75z M1195 275h75v85h-75z M1295 275h75v85h-75z M1395 275h75v85h-75z"/>
+  <path d="M1095 400h75v85h-75z M1195 400h75v85h-75z M1295 400h75v85h-75z M1395 400h75v85h-75z"/>
+ </g>
+ <path d="M0 575 Q400 520 800 580 T1600 565 L1600 900 L0 900Z" fill="url(#ground)"/>
+ <path d="M0 690 Q500 630 920 700 T1600 670 L1600 900 L0 900Z" fill="#b5d9a2" opacity=".65"/>
+ <g fill="#43865e"><circle cx="80" cy="540" r="70"/><circle cx="125" cy="515" r="58"/><circle cx="1510" cy="540" r="82"/><circle cx="1450" cy="510" r="58"/></g>
+ <g fill="#ffdb77"><circle cx="95" cy="510" r="8"/><circle cx="1465" cy="495" r="7"/><circle cx="1500" cy="530" r="6"/></g>
+ <path d="M680 900 L820 570 L910 570 L1080 900Z" fill="#e8d8c7" opacity=".8"/>
+ <g fill="#fff" opacity=".65"><path d="M0 800q90-40 180 0t180 0v100H0Z"/><path d="M1320 780q80-35 160 0t120 0v120h-280Z"/></g>
+</svg>
+<div id="topline"><span id="title">金田のモテ期は来るんだが？</span><span class="badge" id="day">1日目・大学の正門</span></div>
+<div id="characters">
+ <div class="char" id="kaneda">
+ <svg viewBox="0 0 300 560" role="img" aria-label="金田">
+  <defs><linearGradient id="suitK" x2="0" y2="1"><stop stop-color="#29445b"/><stop offset="1" stop-color="#101f32"/></linearGradient></defs>
+  <path d="M45 560 Q38 405 74 335 L115 302 L191 304 L233 348 Q270 425 270 560Z" fill="url(#suitK)" stroke="#162c41" stroke-width="4"/>
+  <path d="M112 302 L151 355 L190 302 L215 560 L90 560Z" fill="#f4f1e9"/>
+  <path d="M145 355 L166 355 L180 560 L132 560Z" fill="#b82f50"/>
+  <path d="M118 286 L113 329 L151 369 L192 329 L183 285Z" fill="#dba98c"/>
+  <path d="M94 105 Q97 44 153 42 Q211 43 216 107 L206 230 Q194 290 153 297 Q112 285 102 230Z" fill="#e9bfa1" stroke="#8e6c5a" stroke-width="4"/>
+  <path d="M94 111 Q78 77 99 50 Q120 26 154 30 Q196 27 213 57 L221 103 L207 91 L202 61 L193 89 L186 55 L177 86 L167 51 L159 84 L148 53 L140 86 L129 56 L121 91 L110 66 L107 103Z" fill="#3c3b3b"/>
+  <path d="M98 109 Q68 93 62 131 Q64 164 101 160 M212 109 Q243 96 247 132 Q244 164 207 160" fill="#d7d5d0" stroke="#aaa8a4" stroke-width="4"/>
+  <path d="M125 162 l14 2 M169 164 l14 -2" stroke="#4d3a32" stroke-width="5" stroke-linecap="round"/>
+  <path d="M152 171 L143 202 L157 205" fill="none" stroke="#a8775d" stroke-width="3"/>
+  <path d="M132 235 Q152 225 175 236" fill="none" stroke="#88534d" stroke-width="4" stroke-linecap="round"/>
+  <path d="M128 239 Q153 248 178 239" fill="#a95e56" opacity=".4"/>
+  <path d="M112 326 L151 369 L190 326 L181 347 L151 386 L121 347Z" fill="#fff"/>
+ </svg></div>
+ <div class="char" id="yo">
+ <svg viewBox="0 0 420 640" role="img" aria-label="山本よういちろー">
+  <defs><linearGradient id="suitY" x2="0" y2="1"><stop stop-color="#f5f7fc"/><stop offset="1" stop-color="#9cb3c8"/></linearGradient><linearGradient id="hairY" x2="0" y2="1"><stop stop-color="#d9a05b"/><stop offset="1" stop-color="#a96b2f"/></linearGradient></defs>
+  <path d="M28 640 Q35 420 95 356 L166 326 L259 328 L329 367 Q381 452 394 640Z" fill="url(#suitY)" stroke="#55718a" stroke-width="4"/>
+  <path d="M165 326 L210 390 L257 328 L282 640 L139 640Z" fill="#fff"/>
+  <path d="M205 390 L224 390 L246 640 L178 640Z" fill="#bc3154"/>
+  <path d="M162 284 L156 345 L210 385 L263 343 L253 280Z" fill="#e7b18f"/>
+  <path d="M127 105 Q131 45 207 46 Q281 45 292 108 L276 250 Q263 303 210 310 Q159 300 145 249Z" fill="#f1c4a2" stroke="#9c7158" stroke-width="4"/>
+  <!-- straight-ish light brown hair with curled ends, deliberately not an afro -->
+  <path d="M125 142 Q107 87 135 48 Q163 14 204 28 Q250 13 280 48 Q309 78 289 139 L277 170 Q270 139 271 113 Q255 130 246 105 Q230 126 218 101 Q199 126 184 100 Q168 124 156 104 Q145 126 140 151Z" fill="url(#hairY)" stroke="#8c5528" stroke-width="5"/>
+  <path d="M132 110 Q115 132 137 151 Q150 158 148 135 M164 103 Q150 126 168 143 M205 98 Q194 122 211 139 M246 105 Q233 130 254 147 Q270 152 269 131 M282 117 Q300 137 282 158" fill="none" stroke="#dca763" stroke-width="10" stroke-linecap="round"/>
+  <path d="M166 166 Q181 158 192 166 M226 166 Q240 158 254 166" stroke="#553d2c" stroke-width="6" stroke-linecap="round" fill="none"/>
+  <path d="M207 176 L197 207 L212 211" fill="none" stroke="#b78060" stroke-width="3"/>
+  <path d="M183 236 Q211 254 241 234" fill="none" stroke="#a94e4c" stroke-width="5" stroke-linecap="round"/>
+  <path d="M157 345 L210 385 L263 343 L245 371 L210 402 L175 371Z" fill="#fff"/>
+  <path d="M75 432 Q116 403 153 433 L174 466 L139 481 L107 462Z" fill="#f0c3a1"/>
+ </svg></div>
+ <div class="char" id="atsushi">
+ <svg viewBox="0 0 420 680" role="img" aria-label="新谷敦">
+  <defs><linearGradient id="suitA" x2="0" y2="1"><stop stop-color="#25364b"/><stop offset="1" stop-color="#111c2d"/></linearGradient></defs>
+  <path d="M30 680 Q35 465 92 383 L155 350 L259 352 L328 390 Q384 478 394 680Z" fill="url(#suitA)" stroke="#101c2c" stroke-width="4"/>
+  <path d="M153 350 L208 415 L260 352 L282 680 L133 680Z" fill="#e7edf4"/>
+  <path d="M204 415 L226 415 L246 680 L178 680Z" fill="#ad2f50"/>
+  <path d="M158 307 L151 366 L209 411 L267 365 L258 306Z" fill="#e8b99e"/>
+  <!-- notably elongated face -->
+  <path d="M133 106 Q143 35 209 35 Q277 36 286 110 L272 290 Q260 359 210 371 Q160 359 147 289Z" fill="#efc6ac" stroke="#a67c69" stroke-width="4"/>
+  <path d="M131 137 Q115 80 145 46 Q176 13 209 25 Q255 15 280 51 Q300 82 284 146 L272 113 L262 78 L248 111 L239 68 L224 108 L209 64 L195 111 L179 72 L164 116 L150 86 L146 145Z" fill="#222b35" stroke="#121b26" stroke-width="4"/>
+  <!-- glasses -->
+  <rect x="151" y="171" width="55" height="43" rx="9" fill="none" stroke="#26394d" stroke-width="5"/>
+  <rect x="215" y="170" width="55" height="43" rx="9" fill="none" stroke="#26394d" stroke-width="5"/>
+  <path d="M206 184 L215 184" stroke="#26394d" stroke-width="5"/>
+  <path d="M162 187 l16 2 M226 186 l16 -1" stroke="#4b3a32" stroke-width="4" stroke-linecap="round"/>
+  <!-- many acne marks, stylized and non-graphic -->
+  <g fill="#d65c68" stroke="#b94c58" stroke-width="1.5">
+   <circle cx="157" cy="235" r="5"/><circle cx="180" cy="250" r="4"/><circle cx="248" cy="233" r="5"/><circle cx="265" cy="257" r="4"/>
+   <circle cx="164" cy="278" r="4"/><circle cx="193" cy="285" r="5"/><circle cx="235" cy="279" r="4"/><circle cx="253" cy="306" r="5"/>
+   <circle cx="176" cy="318" r="4"/><circle cx="211" cy="327" r="4"/><circle cx="229" cy="245" r="3"/><circle cx="148" cy="199" r="3"/>
+   <circle cx="270" cy="198" r="3"/><circle cx="188" cy="220" r="3"/><circle cx="240" cy="315" r="3"/><circle cx="154" cy="301" r="3"/>
+  </g>
+  <path d="M209 218 L198 247 L212 250" fill="none" stroke="#a77b66" stroke-width="3"/>
+  <path d="M184 289 Q208 282 231 290" fill="none" stroke="#955c59" stroke-width="3"/>
+  <!-- hand always near mouth -->
+  <path d="M235 279 Q268 266 277 292 L272 329 Q264 348 244 337 L222 316 Q216 302 235 279Z" fill="#f0c6ad" stroke="#b58672" stroke-width="3"/>
+  <path d="M240 291 Q253 303 264 315 M234 302 Q248 315 258 325" fill="none" stroke="#c99a83" stroke-width="3" stroke-linecap="round"/>
+  <path d="M153 365 L209 411 L267 365 L245 389 L209 421 L174 389Z" fill="#f6f7f8"/>
+ </svg></div>
+</div>
+<div id="who">金田（心の声）</div>
+<div id="bottomInfo">💗 よういちろー <span id="ys">0</span>　💙 敦 <span id="as">0</span></div>
+<section id="chat"><div id="dialog">大学の正門に立つ金田。なぜか学生たちの恋愛イベントに巻き込まれそうだ……ていふうな。</div><div id="choices"><button class="choice" onclick="startGame()">ゲーム開始</button></div></section>
+<div id="start"><div class="startcard"><h1>金田のモテ期は<br>来るんだが？</h1><p>金田視点のドタバタ恋愛コメディ。<br>画面いっぱいのイラストと、下のチャットだけで進むシンプルなゲーム。</p><button id="startBtn" onclick="startGame()">▶ はじめる</button></div></div>
+<div id="endcard"><div id="endinner"><h2 id="endTitle">エンディング</h2><p id="endText"></p><p id="finalScores"></p><button id="again" onclick="startGame()">もう一度プレイ</button></div></div>
+</div>
+<script>
+const story=[
+ {day:'1日目・大学の正門',who:'金田（心の声）',face:'kaneda',text:'俺はなぜ大学にいるんだ……ていふうな。受付の人に「新入生ですか？」と聞かれた。どう見ても新入生ではない。',opts:[['青春を探しに来ました、と答える',1,0],['見学です、と真顔で答える',0,1],['出口を探していると正直に言う',0,0]]},
+ {day:'1日目・中庭',who:'山本よういちろー',face:'yo',text:'「おっ、金田！ 学園祭の準備を手伝ってほしいんだが！」\\nよういちろーの髪は根元がまっすぐなのに、毛先だけ自由意志を持っている。',opts:[['毛先、今日も元気だな',2,0],['毛先だけ別の大学に通ってる？',1,0],['普通に手伝う',1,1]]},
+ {day:'1日目・図書室',who:'新谷 敦',face:'atsushi',text:'「あの……金田さん。ぼ、僕も準備を……」\\n敦はいつものように口元に手を当てて、ノートを差し出した。表紙には『失敗しない学園祭』と書いてある。',opts:[['ゆっくりでいいよ、と伝える',0,2],['ノートの題名を褒める',1,2],['失敗したら伝説だ、と励ます',0,1]]},
+ {day:'2日目・企画会議',who:'金田（心の声）',face:'kaneda',text:'出し物候補は「恋愛相談所」「毛先の自由研究」「無言でうなずく喫茶店」。最後の案は敦が出した。接客が少なくて済むらしい。',opts:[['恋愛相談所を提案',1,2],['毛先の自由研究に賛成',2,0],['無言喫茶店を推す',0,2]]},
+ {day:'2日目・中庭のベンチ',who:'山本よういちろー',face:'yo',text:'「俺の髪は天然なんだが！ 朝のセットはちょっと40分くらいなんだが！」\\nカバンからワックスとヘアアイロンと、小型の定規が出てきた。',opts:[['定規で毛先の角度を測る',2,0],['40分は天然の範囲外だろ！',1,0],['敦に判定を頼む',0,2]]},
+ {day:'2日目・図書室のすみ',who:'新谷 敦',face:'atsushi',text:'「実は……恋愛相談所の看板、僕が作ったんです。金田さんが来てくれたら……うれしい、です」\\n看板の『恋』だけ裏返しだった。',opts:[['一緒に直そうと誘う',1,2],['大切に飾ろうと言う',0,2],['裏返しも個性だと言う',0,1]]},
+ {day:'3日目・学園祭ステージ',who:'金田（心の声）',face:'kaneda',text:'なぜか金田が司会に任命された。台本には「若者の心をつかむ一言」とある。マイクが渡された……ていふうな。',opts:[['青春してるかー！と叫ぶ',1,1],['本日はご来場なんだが、と挨拶',2,0],['敦に助けを求める',0,2]]},
+ {day:'3日目・夕暮れの中庭',who:'金田（心の声）',face:'kaneda',text:'ついに告白（？）の時間。よういちろーは毛先を整え、敦は口元に手を置き、金田は頭頂部を確認した。確認できる毛は少なかった。',opts:[['よういちろーに気持ちを伝える',0,0,'Y'],['敦に気持ちを伝える',0,0,'A'],['恋より先に出口を探す',0,0,'S']]}
+];
+let i=0,y=0,a=0;
+const $=id=>document.getElementById(id);
+function startGame(){i=0;y=0;a=0;$('start').style.display='none';$('endcard').style.display='none';$('chat').style.display='flex';render();}
+function render(){const s=story[i];$('day').textContent=s.day;$('who').textContent=s.who;$('dialog').textContent=s.text;$('ys').textContent=y;$('as').textContent=a;['kaneda','yo','atsushi'].forEach(id=>$(id).style.opacity=(id===s.face?'1':'.10'));['kaneda','yo','atsushi'].forEach(id=>$(id).style.transform=(id===s.face?'translateY(0) scale(1.02)':'translateY(14px) scale(.96)'));const box=$('choices');box.innerHTML='';s.opts.forEach((o,n)=>{let b=document.createElement('button');b.className='choice';b.textContent=(n+1)+'　'+o[0];b.onclick=()=>pick(o);box.appendChild(b)});}
+function pick(o){if(o[3]){end(o[3]);return;}y+=o[1];a+=o[2];i++;if(i>=story.length)end('S');else render();}
+function end(route){$('endcard').style.display='flex';$('ys').textContent=y;$('as').textContent=a;let title,text;if(route==='Y'&&y>=a){title='よういちろーエンド：毛先まで、なんだが';text='よういちろー「金田、これからも一緒に髪型研究するんだが！」\\n金田「恋愛より先に研究費が必要……ていふうな」\\n二人は毛先の自由研究サークルを結成。初回の活動は左右の毛先を同じ方向に曲げることだった。';}else if(route==='A'&&a>=y){title='新谷敦エンド：口元の向こうの本音';text='敦「金田さんといると、少しだけ話せる気がします……」\\n金田「ゆっくりでいい。俺も若者言葉はゆっくり覚える……ていふうな」\\n二人は学園祭の割引券を使い切るため、喫茶店を7軒巡った。8軒目は定休日だった。';}else if(route==='S'){title='真エンド：金田、出口を発見';text='金田は気づいた。恋をする前に、まず出口を見つけるべきだった。\\n「青春とは迷子から始まる……ていふうな」\\n出口は最初から、ずっと右側にあった。';}else{title='バッドエンド：口癖しか残らない';text='金田「〜ていふうな」\\nよういちろー「〜なんだが」\\n敦「……あの……」\\n会話は口癖だけになり、話の内容が消えた。なぜか学園祭のアンケートは高評価だった。';}$('endTitle').textContent=title;$('endText').textContent=text;$('finalScores').textContent='最終好感度：よういちろー '+y+' ／ 敦 '+a;}
+</script>
+</body></html>
