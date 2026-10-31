@@ -265,7 +265,7 @@ let currentId = null;
 let timer = null;
 
 // 最初に入れておく修学旅行の作文
-const firstEssay = ;
+const firstEssay = ``;
 
 function makeId() {
     return Date.now().toString(36) +
@@ -554,7 +554,7 @@ function start() {
     if (files.length === 0) {
         files.push({
             id: makeId(),
-            name: ,
+            name: "",
             text: firstEssay,
             updated: Date.now()
         });
