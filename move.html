@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>動画プレイヤー</title>
+
+<!-- 動画変換エンジン -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 16px;
+  background: #f2f4f8;
+  color: #222;
+  font-family: Arial, "Meiryo", sans-serif;
+}
+
+h1 {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 25px;
+}
+
+.app {
+  max-width: 1100px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 14px;
+  align-items: start;
+}
+
+/* 動画エリア */
+.video-area {
+  position: relative;
+  min-width: 0;
+  background: #111;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.file-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.file-overlay label {
+  display: inline-block;
+  padding: 14px 22px;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #222;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px #0004;
+}
+
+.file-overlay label:hover {
+  background: #e8efff;
+}
+
+#fileInput {
+  display: none;
+}
+
+/* 速度操作パネル */
+.panel {
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px #0000000d;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.current-speed {
+  margin-bottom: 12px;
+  text-align: center;
+  font-size: 27px;
+  font-weight: bold;
+  color: #245bdb;
+}
+
+.speed-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+button,
+select,
+input[type="number"] {
+  font: inherit;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px;
+  background: #e9edf5;
+  color: #222;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(0.95);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.speed-button.active {
+  background: #245bdb;
+  color: white;
+}
+
+.small-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.small-controls button {
+  flex: 1;
+}
+
+.reset-button {
+  width: 100%;
+  margin-top: 8px;
+  background: #dce7ff;
+}
+
+.hint {
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+  margin: 12px 0 0;
+}
+
+/* 保存エリア */
+.save-area {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 2px 8px #0000000d;
+}
+
+.save-area h2 {
+  margin: 0 0 12px;
+  font-size: 20px;
+}
+
+.save-options {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.save-options label {
+  font-weight: bold;
+}
+
+select,
+input[type="number"] {
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid #ccd2df;
+  border-radius: 8px;
+  background: white;
+}
+
+#saveSpeed {
+  min-width: 130px;
+}
+
+#customSpeed {
+  width: 110px;
+}
+
+.save-button {
+  min-height: 44px;
+  padding: 10px 18px;
+  background: #176c43;
+  color: white;
+  font-weight: bold;
+}
+
+.status {
+  margin-top: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.progress {
+  width: 100%;
+  height: 14px;
+  margin-top: 10px;
+  accent-color: #176c43;
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 12px 18px;
+  background: #245bdb;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 10px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel,
+  .save-area {
+    grid-column: 1;
+  }
+
+  .speed-buttons {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .save-options {
+    align-items: stretch;
+  }
+
+  .save-options label {
+    width: 100%;
+  }
+
+  .save-button {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎬 動画プレイヤー</h1>
+
+<div class="app">
+
+  <!-- 動画 -->
+  <div class="video-area">
+
+    <video id="video" controls playsinline></video>
+
+    <div class="file-overlay" id="fileOverlay">
+      <label for="fileInput">📂 動画ファイルを選択</label>
+    </div>
+
+    <input
+      type="file"
+      id="fileInput"
+      accept="video/*,.mkv,.avi,.mov,.webm,.mp4"
+    >
+
+  </div>
+
+  <!-- 再生速度 -->
+  <section class="panel">
+
+    <h2>⚡ 再生速度</h2>
+
+    <div class="current-speed" id="currentSpeed">1.00倍</div>
+
+    <div class="speed-buttons">
+      <button class="speed-button" data-speed="1">1倍</button>
+      <button class="speed-button" data-speed="2">2倍</button>
+      <button class="speed-button" data-speed="4">4倍</button>
+      <button class="speed-button" data-speed="8">8倍</button>
+      <button class="speed-button" data-speed="16">16倍</button>
+      <button class="speed-button" data-speed="32">32倍</button>
+      <button class="speed-button" data-speed="64">64倍</button>
+      <button class="speed-button" data-speed="0.5">0.5倍</button>
+    </div>
+
+    <div class="small-controls">
+      <button id="slower">➖ 遅く</button>
+      <button id="faster">➕ 速く</button>
+    </div>
+
+    <button class="reset-button" id="resetSpeed">
+      🔄 1倍速に戻す
+    </button>
+
+    <p class="hint">
+      「遅く」「速く」で0.25倍ずつ変更できます。<br>
+      再生速度の変更は、動画ファイル自体には影響しません。
+    </p>
+
+  </section>
+
+  <!-- 動画ファイルの保存 -->
+  <section class="save-area">
+
+    <h2>💾 倍速動画を作成・保存</h2>
+
+    <div class="save-options">
+
+      <label for="saveSpeed">保存する倍率：</label>
+
+      <select id="saveSpeed">
+        <option value="0.5">0.5倍</option>
+        <option value="0.75">0.75倍</option>
+        <option value="1">1倍</option>
+        <option value="1.25">1.25倍</option>
+        <option value="1.5">1.5倍</option>
+        <option value="2">2倍</option>
+        <option value="3">3倍</option>
+        <option value="4">4倍</option>
+        <option value="8">8倍</option>
+        <option value="16">16倍</option>
+        <option value="32">32倍</option>
+        <option value="64">64倍</option>
+        <option value="custom">好きな倍率を入力</option>
+      </select>
+
+      <label for="customSpeed">指定倍率：</label>
+
+      <input
+        type="number"
+        id="customSpeed"
+        min="0.1"
+        max="64"
+        step="0.1"
+        value="1.5"
+        disabled
+      >
+
+      <button class="save-button" id="exportButton">
+        💾 動画を変換して保存
+      </button>
+
+    </div>
+
+    <progress
+      class="progress"
+      id="progress"
+      value="0"
+      max="100"
+      hidden
+    ></progress>
+
+    <div class="status" id="status">
+      まず動画ファイルを選択してください。
+    </div>
+
+    <div id="downloadArea"></div>
+
+    <p class="hint">
+      ※ 変換した動画はMP4形式で保存します。<br>
+      ※ 変換中はページを閉じないでください。動画の長さや倍率によって時間がかかります。<br>
+      ※ 大きな動画はメモリ不足で変換できない場合があります。まず短い動画で試してください。
+    </p>
+
+  </section>
+
+</div>
+
+<script>
+const video = document.getElementById("video");
+const fileInput = document.getElementById("fileInput");
+const fileOverlay = document.getElementById("fileOverlay");
+const currentSpeed = document.getElementById("currentSpeed");
+const slowerButton = document.getElementById("slower");
+const fasterButton = document.getElementById("faster");
+const resetButton = document.getElementById("resetSpeed");
+const speedButtons = document.querySelectorAll(".speed-button");
+
+const saveSpeed = document.getElementById("saveSpeed");
+const customSpeed = document.getElementById("customSpeed");
+const exportButton = document.getElementById("exportButton");
+const statusText = document.getElementById("status");
+const progress = document.getElementById("progress");
+const downloadArea = document.getElementById("downloadArea");
+
+let selectedFile = null;
+let videoURL = null;
+let ffmpeg = null;
+let ffmpegReady = false;
+let exporting = false;
+
+const MIN_SPEED = 0.1;
+const MAX_SPEED = 64;
+
+/* 動画を選ぶ */
+fileInput.addEventListener("change", function () {
+  const file = fileInput.files[0];
+
+  if (!file) {
+    return;
+  }
+
+  selectedFile = file;
+
+  if (videoURL) {
+    URL.revokeObjectURL(videoURL);
+  }
+
+  videoURL = URL.createObjectURL(file);
+  video.src = videoURL;
+  video.load();
+
+  fileOverlay.style.display = "none";
+  downloadArea.innerHTML = "";
+
+  statusText.textContent =
+    "選択中：" + file.name +
+    "（" + (file.size / 1024 / 1024).toFixed(1) + " MB）";
+
+  setSpeed(1);
+});
+
+/* 再生速度を変更 */
+function setSpeed(speed) {
+  speed = Number(speed);
+
+  if (!Number.isFinite(speed)) {
+    return;
+  }
+
+  speed = Math.max(0.25, Math.min(64, speed));
+
+  video.playbackRate = speed;
+  currentSpeed.textContent = speed.toFixed(2) + "倍";
+
+  speedButtons.forEach(function (button) {
+    const buttonSpeed = Number(button.dataset.speed);
+
+    button.classList.toggle(
+      "active",
+      Math.abs(buttonSpeed - speed) < 0.001
+    );
+  });
+}
+
+speedButtons.forEach(function (button) {
+  button.addEventListener("click", function () {
+    setSpeed(Number(button.dataset.speed));
+  });
+});
+
+slowerButton.addEventListener("click", function () {
+  setSpeed(video.playbackRate - 0.25);
+});
+
+fasterButton.addEventListener("click", function () {
+  setSpeed(video.playbackRate + 0.25);
+});
+
+resetButton.addEventListener("click", function () {
+  setSpeed(1);
+});
+
+/* 動画を開き直したときも表示を合わせる */
+video.addEventListener("ratechange", function () {
+  currentSpeed.textContent = video.playbackRate.toFixed(2) + "倍";
+});
+
+/* カスタム倍率の入力を切り替え */
+saveSpeed.addEventListener("change", function () {
+  customSpeed.disabled = saveSpeed.value !== "custom";
+});
+
+/* 音声用の速度フィルターを作る */
+function makeAtempoChain(speed) {
+  let remaining = speed;
+  const parts = [];
+
+  /*
+    atempoは古いFFmpegでも使いやすいよう、
+    0.5〜2倍の範囲を組み合わせる。
+  */
+  while (remaining > 2.000001) {
+    parts.push("atempo=2.0");
+    remaining /= 2;
+  }
+
+  while (remaining < 0.499999) {
+    parts.push("atempo=0.5");
+    remaining /= 0.5;
+  }
+
+  parts.push("atempo=" + remaining.toFixed(6));
+
+  return parts.join(",");
+}
+
+/* ファイル名を安全な形にする */
+function makeOutputName(name, speed) {
+  const dot = name.lastIndexOf(".");
+  const base = dot > 0 ? name.slice(0, dot) : name;
+
+  const safeBase = base.replace(/[\\/:*?"<>|]/g, "_");
+  const speedText = String(speed).replace(".", "_");
+
+  return safeBase + "_" + speedText + "x.mp4";
+}
+
+/* FFmpegを読み込む */
+async function loadFFmpeg() {
+  if (ffmpegReady) {
+    return;
+  }
+
+  if (typeof FFmpeg === "undefined" ||
+      typeof FFmpeg.createFFmpeg !== "function") {
+    throw new Error(
+      "動画変換エンジンを読み込めませんでした。インターネット接続を確認してください。"
+    );
+  }
+
+  statusText.textContent =
+    "動画変換エンジンを読み込んでいます。初回は時間がかかります…";
+
+  const createFFmpeg = FFmpeg.createFFmpeg;
+
+  ffmpeg = createFFmpeg({
+    log: false,
+    corePath:
+      "https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js"
+  });
+
+  ffmpeg.setProgress(function (data) {
+    if (data && Number.isFinite(data.ratio)) {
+      const percent = Math.max(
+        0,
+        Math.min(100, Math.round(data.ratio * 100))
+      );
+
+      progress.value = percent;
+      statusText.textContent = "変換中… " + percent + "%";
+    }
+  });
+
+  await ffmpeg.load();
+  ffmpegReady = true;
+}
+
+/* FFmpeg内のファイルを削除 */
+function removeFFmpegFile(name) {
+  try {
+    ffmpeg.FS("unlink", name);
+  } catch (error) {
+    // ファイルがまだ存在しない場合は何もしない
+  }
+}
+
+/* 動画を変換して保存 */
+exportButton.addEventListener("click", async function () {
+  if (exporting) {
+    return;
+  }
+
+  if (!selectedFile) {
+    statusText.textContent = "先に動画ファイルを選択してください。";
+    return;
+  }
+
+  let speed;
+
+  if (saveSpeed.value === "custom") {
+    speed = Number(customSpeed.value);
+  } else {
+    speed = Number(saveSpeed.value);
+  }
+
+  if (
+    !Number.isFinite(speed) ||
+    speed < MIN_SPEED ||
+    speed > MAX_SPEED
+  ) {
+    statusText.textContent =
+      "倍率は0.1〜64の範囲で入力してください。";
+    return;
+  }
+
+  exporting = true;
+  exportButton.disabled = true;
+  progress.hidden = false;
+  progress.value = 0;
+  downloadArea.innerHTML = "";
+
+  const inputName = "input_video";
+  const outputName = "output_video.mp4";
+
+  try {
+    await loadFFmpeg();
+
+    statusText.textContent = "動画を読み込んでいます…";
+
+    removeFFmpegFile(inputName);
+    removeFFmpegFile(outputName);
+
+    const fileData = await FFmpeg.fetchFile(selectedFile);
+
+    ffmpeg.FS("writeFile", inputName, fileData);
+
+    const videoFilter = "setpts=PTS/" + speed.toFixed(6);
+    const audioFilter = makeAtempoChain(speed);
+
+    statusText.textContent = "動画を変換しています…";
+
+    try {
+      /* まず音声付きで変換 */
+      await ffmpeg.run(
+        "-i", inputName,
+        "-vf", videoFilter,
+        "-af", audioFilter,
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-crf", "23",
+        "-c:a", "aac",
+        "-b:a", "128k",
+        "-movflags", "+faststart",
+        outputName
+      );
+
+    } catch (audioError) {
+      /*
+        音声のない動画などで失敗した場合、
+        音声なしで変換できるか試す。
+      */
+      removeFFmpegFile(outputName);
+
+      statusText.textContent =
+        "音声付き変換ができなかったため、音声なしで再試行しています…";
+
+      await ffmpeg.run(
+        "-i", inputName,
+        "-vf", videoFilter,
+        "-an",
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-crf", "23",
+        "-movflags", "+faststart",
+        outputName
+      );
+    }
+
+    statusText.textContent = "保存用ファイルを準備しています…";
+
+    const outputData = ffmpeg.FS("readFile", outputName);
+
+    const blob = new Blob(
+      [outputData],
+      { type: "video/mp4" }
+    );
+
+    const downloadURL = URL.createObjectURL(blob);
+    const filename = makeOutputName(selectedFile.name, speed);
+
+    const link = document.createElement("a");
+    link.href = downloadURL;
+    link.download = filename;
+    link.className = "download-link";
+    link.textContent = "⬇ " + filename;
+
+    downloadArea.appendChild(link);
+
+    const sizeMB = (blob.size / 1024 / 1024).toFixed(2);
+
+    statusText.textContent =
+      "変換が完了しました！ ファイルサイズ：" +
+      sizeMB + " MB。下のボタンを押して保存してください。";
+
+    progress.value = 100;
+
+    /*
+      ダウンロードリンクが使えるようにURLはすぐには削除しない。
+      次の変換時に古いリンクを片付ける。
+    */
+    link.addEventListener("click", function () {
+      setTimeout(function () {
+        URL.revokeObjectURL(downloadURL);
+      }, 60000);
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    statusText.textContent =
+      "変換に失敗しました。短い動画で試すか、ページをGitHub Pagesで開いてください。エラー：" +
+      (error && error.message ? error.message : String(error));
+
+  } finally {
+    removeFFmpegFile(inputName);
+    removeFFmpegFile(outputName);
+
+    exporting = false;
+    exportButton.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
