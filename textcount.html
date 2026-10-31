@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>原稿用紙メーカー</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f2f4f8;
+    color: #333;
+}
+
+header {
+    background: #3478db;
+    color: white;
+    padding: 16px;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+.layout {
+    display: flex;
+    min-height: calc(100vh - 60px);
+}
+
+.sidebar {
+    width: 250px;
+    padding: 15px;
+    background: white;
+    border-right: 1px solid #ddd;
+    flex-shrink: 0;
+}
+
+.sidebar h3 {
+    margin-top: 5px;
+}
+
+.file {
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+
+.file:hover {
+    background: #edf4ff;
+}
+
+.file.active {
+    background: #e0edff;
+    border-color: #3478db;
+}
+
+.file small {
+    display: block;
+    margin-top: 5px;
+    color: #777;
+}
+
+main {
+    flex: 1;
+    min-width: 0;
+    padding: 20px;
+}
+
+input, textarea {
+    font: inherit;
+}
+
+#filename {
+    width: 100%;
+    max-width: 700px;
+    padding: 10px;
+    font-size: 20px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+}
+
+#text {
+    width: 100%;
+    max-width: 800px;
+    height: 220px;
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    line-height: 1.8;
+    resize: vertical;
+}
+
+button {
+    padding: 10px 14px;
+    margin: 4px 2px;
+    border: 0;
+    border-radius: 6px;
+    background: #3478db;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    background: #245eaf;
+}
+
+button.danger {
+    background: #d94b4b;
+}
+
+#status {
+    min-height: 24px;
+    color: #267a35;
+}
+
+#paper {
+    margin-top: 20px;
+}
+
+.page {
+    width: min(100%, 600px);
+    margin: 20px auto;
+    padding: 20px;
+    background: white;
+    box-shadow: 0 2px 8px #ccc;
+}
+
+.page-title {
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 10px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(20, minmax(0, 1fr));
+    border-top: 1px solid #888;
+    border-left: 1px solid #888;
+}
+
+.cell {
+    aspect-ratio: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: 1px solid #888;
+    border-bottom: 1px solid #888;
+    font-family: serif;
+    font-size: clamp(8px, 2vw, 18px);
+    overflow: hidden;
+}
+
+@media (max-width: 650px) {
+    .layout {
+        display: block;
+    }
+
+    .sidebar {
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid #ddd;
+    }
+
+    main {
+        padding: 12px;
+    }
+
+    .page {
+        padding: 10px;
+    }
+}
+
+@media print {
+    header, .sidebar, .editor, #status {
+        display: none !important;
+    }
+
+    .layout, main {
+        display: block;
+        padding: 0;
+    }
+
+    .page {
+        width: 100%;
+        margin: 0;
+        padding: 10mm;
+        box-shadow: none;
+        break-after: page;
+    }
+
+    .page:last-child {
+        break-after: auto;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>📚 原稿用紙メーカー</header>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <h3>📁 作文ファイル</h3>
+
+        <button onclick="newFile()">＋ 新しい作文</button>
+
+        <div id="fileList"></div>
+
+        <p style="font-size:12px;color:#777">
+            作文はこのブラウザ内に保存されます。
+        </p>
+    </aside>
+
+    <main>
+
+        <div class="editor">
+            <input id="filename" placeholder="作文の名前">
+
+            <br>
+
+            <button onclick="saveFile()">💾 保存</button>
+            <button onclick="renameFile()">✏️ 名前変更</button>
+            <button class="danger" onclick="deleteFile()">🗑️ 削除</button>
+            <button onclick="window.print()">🖨️ 印刷</button>
+
+            <p>作文を入力すると原稿用紙に反映されます。</p>
+
+            <textarea id="text" placeholder="ここに作文を書こう！"></textarea>
+
+            <p>
+                文字数：<strong id="count">0</strong>文字　
+                ページ数：<strong id="pages">1</strong>ページ
+            </p>
+
+            <p id="status" aria-live="polite"></p>
+        </div>
+
+        <div id="paper"></div>
+
+    </main>
+</div>
+
+<script>
+const KEY = "genkou_file_manager_v1";
+
+const nameInput = document.getElementById("filename");
+const textInput = document.getElementById("text");
+const fileList = document.getElementById("fileList");
+const paper = document.getElementById("paper");
+const statusText = document.getElementById("status");
+
+let files = [];
+let currentId = null;
+let timer = null;
+
+// 最初に入れておく修学旅行の作文
+const firstEssay = `修学旅行に行きました。二泊三日です。修学旅行は東京駅に集合でした。朝７時４５分に集合です。家を出るのは６時半でした。そこから東京駅に向かって、東京駅で８時４０分まで待って新幹線に乗りました。そのおかげで京都駅の前からすでに疲れていました。新幹線に乗った後酔いました。新幹線で酔った後に昼ごはんを食べました。昼ご飯は１０時でとても早い時間に食べました。昼ごはんのにおいが新幹線の中に充満して余計に酔いました。
+
+京都駅に着いたら酔った状態でバスに乗りました。ガイドさんが明るく話してくれたおかげで眠ることができました。１日目はずっとバスで移動しました。法隆寺、薬師寺、唐招提寺にいきました。法隆寺には小さめの方がいました。薬師寺では面白いお坊さんの話を聞かせていただきました。その中でも教訓を学べてさすがYSJでした。唐招提寺では立っている薬師如来と千手観音がいました。千手観音の迫力がすごかったです。宿舎に戻って１日目は終わりです。
+
+２日目は最初に東大寺に行きました。東大寺までの道の途中に鹿がたくさんいました。子供は毛がもふもふです。東大寺はとても大きかったです。そこでしかのふんふんふんちょこだんごも買えました。そこから班行動です。平等院では新婚旅行中の外国人に会いました。優しそうな人でした。ワムチャに行った後伏見稲荷大社に行きました。駅前でとてもいいところにありました。そのあとは清水寺でおみくじをしました。私はまだ本領を発揮できないようです。清水寺の後は走って金閣寺に行きました。金閣寺では恋みくじをしました。２，３年はまだ待ったほうがいいようです。２日目はその後宿舎に行って終わりです。
+
+三日目はタクシー運転手と京都をまわりました。楽しい方でした。私にとって３日目が一番面白かったです。これからは髪を伸ばします。`;
+
+function makeId() {
+    return Date.now().toString(36) +
+        Math.random().toString(36).slice(2, 8);
+}
+
+// ファイル一覧を保存する
+function storeFiles() {
+    try {
+        localStorage.setItem(KEY, JSON.stringify(files));
+        return true;
+    } catch (error) {
+        statusText.textContent =
+            "保存できませんでした。ブラウザの保存容量を確認してください。";
+        return false;
+    }
+}
+
+// 現在の作文をファイルに反映
+function updateCurrent() {
+    if (!currentId) return;
+
+    const file = files.find(f => f.id === currentId);
+    if (!file) return;
+
+    file.name = nameInput.value.trim() || "名前のない作文";
+    file.text = textInput.value;
+    file.updated = Date.now();
+}
+
+// ファイル一覧を画面に表示
+function renderFiles() {
+    fileList.innerHTML = "";
+
+    if (files.length === 0) {
+        fileList.textContent = "作文ファイルはありません。";
+        return;
+    }
+
+    for (const file of files) {
+        const item = document.createElement("div");
+        item.className = "file";
+
+        if (file.id === currentId) {
+            item.classList.add("active");
+        }
+
+        const title = document.createElement("strong");
+        title.textContent = "📄 " + file.name;
+
+        const details = document.createElement("small");
+        details.textContent =
+            file.text.length + "文字";
+
+        item.appendChild(title);
+        item.appendChild(details);
+
+        item.addEventListener("click", () => {
+            openFile(file.id);
+        });
+
+        fileList.appendChild(item);
+    }
+}
+
+// ファイルを開く
+function openFile(id) {
+    updateCurrent();
+
+    if (!storeFiles()) return;
+
+    const file = files.find(f => f.id === id);
+    if (!file) return;
+
+    currentId = id;
+    nameInput.value = file.name;
+    textInput.value = file.text;
+
+    makePaper();
+    renderFiles();
+
+    statusText.textContent =
+        "「" + file.name + "」を開きました。";
+}
+
+// 新しい作文を作る
+function newFile() {
+    updateCurrent();
+
+    if (!storeFiles()) return;
+
+    const file = {
+        id: makeId(),
+        name: "新しい作文",
+        text: "",
+        updated: Date.now()
+    };
+
+    files.unshift(file);
+    currentId = file.id;
+
+    nameInput.value = file.name;
+    textInput.value = "";
+
+    makePaper();
+    renderFiles();
+
+    statusText.textContent =
+        "新しい作文を作りました。";
+}
+
+// 保存する
+function saveFile() {
+    updateCurrent();
+
+    if (!storeFiles()) return;
+
+    renderFiles();
+
+    statusText.textContent =
+        "💾 「" + nameInput.value + "」を保存しました。";
+}
+
+// 名前変更
+function renameFile() {
+    if (!currentId) return;
+
+    const file = files.find(f => f.id === currentId);
+    if (!file) return;
+
+    const newName = prompt("新しいファイル名を入力してください", file.name);
+
+    if (newName === null) return;
+
+    if (!newName.trim()) {
+        alert("ファイル名を入力してください。");
+        return;
+    }
+
+    file.name = newName.trim();
+    nameInput.value = file.name;
+    file.updated = Date.now();
+
+    if (!storeFiles()) return;
+
+    renderFiles();
+
+    statusText.textContent = "ファイル名を変更しました。";
+}
+
+// 削除
+function deleteFile() {
+    if (!currentId) return;
+
+    const file = files.find(f => f.id === currentId);
+    if (!file) return;
+
+    if (!confirm("「" + file.name + "」を削除しますか？")) {
+        return;
+    }
+
+    files = files.filter(f => f.id !== currentId);
+    currentId = null;
+
+    if (!storeFiles()) return;
+
+    if (files.length > 0) {
+        openFile(files[0].id);
+    } else {
+        nameInput.value = "";
+        textInput.value = "";
+        makePaper();
+        renderFiles();
+    }
+
+    statusText.textContent = "作文を削除しました。";
+}
+
+// 原稿用紙を作る
+function makePaper() {
+    const text = textInput.value;
+
+    document.getElementById("count").textContent =
+        text.replace(/\r\n|\r|\n/g, "").length;
+
+    const rows = [[]];
+
+    for (const char of text) {
+        if (char === "\n" || char === "\r") {
+            if (char === "\r") continue;
+            rows.push([]);
+            continue;
+        }
+
+        let row = rows[rows.length - 1];
+
+        if (row.length >= 20) {
+            rows.push([]);
+            row = rows[rows.length - 1];
+        }
+
+        row.push(char);
+    }
+
+    const totalPages = Math.max(1, Math.ceil(rows.length / 20));
+
+    document.getElementById("pages").textContent = totalPages;
+    paper.innerHTML = "";
+
+    for (let p = 0; p < totalPages; p++) {
+        const page = document.createElement("div");
+        page.className = "page";
+
+        const title = document.createElement("div");
+        title.className = "page-title";
+        title.textContent =
+            (nameInput.value || "作文") + "　" + (p + 1) + "ページ";
+
+        page.appendChild(title);
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        for (let r = 0; r < 20; r++) {
+            const row = rows[p * 20 + r] || [];
+
+            for (let c = 0; c < 20; c++) {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+
+                if (row[c] !== undefined) {
+                    cell.textContent = row[c];
+                }
+
+                grid.appendChild(cell);
+            }
+        }
+
+        page.appendChild(grid);
+        paper.appendChild(page);
+    }
+}
+
+// 入力を自動反映・自動保存
+function changed() {
+    makePaper();
+    updateCurrent();
+    renderFiles();
+
+    clearTimeout(timer);
+
+    statusText.textContent = "保存中...";
+
+    timer = setTimeout(() => {
+        if (storeFiles()) {
+            statusText.textContent = "✅ 自動保存しました";
+            renderFiles();
+        }
+    }, 400);
+}
+
+textInput.addEventListener("input", changed);
+
+nameInput.addEventListener("input", () => {
+    makePaper();
+    changed();
+});
+
+// 最初に起動
+function start() {
+    try {
+        const data = localStorage.getItem(KEY);
+
+        if (data) {
+            files = JSON.parse(data);
+
+            if (!Array.isArray(files)) {
+                files = [];
+            }
+        }
+    } catch (error) {
+        files = [];
+    }
+
+    // 初回だけ修学旅行の作文を作成
+    if (files.length === 0) {
+        files.push({
+            id: makeId(),
+            name: "修学旅行の作文",
+            text: firstEssay,
+            updated: Date.now()
+        });
+
+        storeFiles();
+    }
+
+    currentId = files[0].id;
+    nameInput.value = files[0].name;
+    textInput.value = files[0].text;
+
+    makePaper();
+    renderFiles();
+}
+
+start();
+</script>
+
+</body>
+</html>
