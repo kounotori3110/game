@@ -345,6 +345,13 @@ footer {
   <h2>暗記カード</h2>
   <p class="sub">表の2つの情報を見て、残りの1つを考えよう！</p>
 
+  <label class="setting-label" for="cardAnswerMode">何を答える？</label>
+  <select id="cardAnswerMode" onchange="resetCards()">
+    <option value="2">元素名を答える</option>
+    <option value="1">元素記号を答える</option>
+    <option value="0">原子番号を答える</option>
+  </select>
+
   <label class="setting-label" for="cardOrder">カードの順番</label>
   <select id="cardOrder" onchange="resetCards()">
     <option value="ordered">順番（1番から）</option>
@@ -671,20 +678,23 @@ function resetCards() {
 
 function updateCard() {
   let e = data[cardOrder[cardIndex]];
-  // 3つの情報から2つを表に、残り1つを裏にする
-  let pairs = [[0,1,2],[0,2,1],[1,2,0]];
-  let pair = pairs[Math.floor(Math.random()*pairs.length)];
-  let values = [String(e[0]),e[1],e[2]];
-  let labels = ["原子番号","元素記号","元素名"];
+  let answerIndex = Number(document.getElementById("cardAnswerMode").value);
+  let values = [String(e[0]), e[1], e[2]];
+  let labels = ["原子番号", "元素記号", "元素名"];
 
+  // 選んだ項目以外の2つを表に表示する
+  let frontIndexes = [0, 1, 2].filter(i => i !== answerIndex);
+  document.getElementById("frontNumber").parentElement.children[0].textContent =
+    labels[frontIndexes[0]];
   document.getElementById("frontNumber").textContent =
-    labels[pair[0]] + "：" + values[pair[0]];
+    values[frontIndexes[0]];
+  document.getElementById("frontSymbol").parentElement.children[0].textContent =
+    labels[frontIndexes[1]];
   document.getElementById("frontSymbol").textContent =
-    labels[pair[1]] + "：" + values[pair[1]];
-  document.getElementById("answerLabel").textContent =
-    labels[pair[2]];
-  document.getElementById("answerValue").textContent =
-    values[pair[2]];
+    values[frontIndexes[1]];
+
+  document.getElementById("answerLabel").textContent = labels[answerIndex];
+  document.getElementById("answerValue").textContent = values[answerIndex];
 
   document.getElementById("cardPosition").textContent =
     (cardIndex+1) + " / " + data.length;
@@ -693,7 +703,7 @@ function updateCard() {
   document.getElementById("cardFront").style.display = "block";
   document.getElementById("cardBack").style.display = "none";
   document.getElementById("cardHint").textContent =
-    "カードをタップすると答えが出るよ！";
+    "カードをタップすると「" + labels[answerIndex] + "」の答えが出るよ！";
 }
 
 function flipCard() {
