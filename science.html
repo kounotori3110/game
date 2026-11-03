@@ -720,6 +720,10 @@ function previousCard() {
   updateCard();
 }
 
+// 最初にカードの順番を作って、1番目の元素を表示する
+makeCardOrder();
+updateCard();
+
 // 4択クイズ
 let currentQuiz;
 let quizScore = 0;
