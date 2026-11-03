@@ -366,8 +366,7 @@ footer {
     </div>
   </div>
 
-  <p id="cardHint" class="sub">カードをタップすると裏返るよ！</p>
-  <button class="action" onclick="flipCard()">カードをめくる / 戻す</button>
+  <p id="cardHint" class="sub">カードをタップすると答えが出るよ！</p>
   <div class="card-controls">
     <button onclick="previousCard()">← 前へ</button>
     <button onclick="nextCard()">次へ →</button>
@@ -694,18 +693,21 @@ function updateCard() {
   document.getElementById("cardFront").style.display = "block";
   document.getElementById("cardBack").style.display = "none";
   document.getElementById("cardHint").textContent =
-    "カードをタップすると裏返るよ！";
+    "カードをタップすると答えが出るよ！";
 }
 
 function flipCard() {
-  flipped = !flipped;
-  document.getElementById("cardFront").style.display =
-    flipped ? "none" : "block";
-  document.getElementById("cardBack").style.display =
-    flipped ? "block" : "none";
-  document.getElementById("cardHint").textContent =
-    flipped ? "答えを確認できたら、次のカードへ！" :
-    "カードをタップすると裏返るよ！";
+  // 表のときにタップ：裏返して答えを表示
+  if(!flipped) {
+    flipped = true;
+    document.getElementById("cardFront").style.display = "none";
+    document.getElementById("cardBack").style.display = "block";
+    document.getElementById("cardHint").textContent =
+      "答えを確認！もう一度タップすると次の元素へ進むよ。";
+  } else {
+    // 裏のときにもう一度タップ：次の元素へ
+    nextCard();
+  }
 }
 
 function nextCard() {
