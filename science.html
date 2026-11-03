@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周期表マスター118</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: sans-serif;
+  background: #eef3f9;
+  color: #243047;
+}
+
+header {
+  background: #243b65;
+  color: white;
+  text-align: center;
+  padding: 22px 10px;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 26px;
+}
+
+header p {
+  margin-bottom: 0;
+  font-size: 13px;
+}
+
+nav {
+  display: flex;
+  gap: 5px;
+  padding: 8px;
+  background: white;
+  overflow-x: auto;
+}
+
+nav button {
+  flex: 1;
+  min-width: 75px;
+  padding: 12px 5px;
+  border: none;
+  border-radius: 9px;
+  background: #e3eaf5;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+nav button.active {
+  background: #315caa;
+  color: white;
+}
+
+main {
+  padding: 14px;
+  max-width: 650px;
+  margin: auto;
+}
+
+.panel {
+  display: none;
+}
+
+.panel.active {
+  display: block;
+}
+
+.box {
+  background: white;
+  border-radius: 15px;
+  padding: 18px;
+  margin-bottom: 15px;
+  box-shadow: 0 3px 12px #00000010;
+}
+
+h2 {
+  font-size: 20px;
+  margin-top: 0;
+}
+
+.big {
+  font-size: 65px;
+  font-weight: bold;
+  color: #315caa;
+  margin: 10px;
+}
+
+.sub {
+  color: #68758a;
+  font-size: 14px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.action {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  background: #315caa;
+  color: white;
+  padding: 15px;
+  font-size: 16px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.action:active {
+  opacity: 0.75;
+}
+
+input, select {
+  width: 100%;
+  padding: 13px;
+  border: 1px solid #ccd5e3;
+  border-radius: 9px;
+  font-size: 16px;
+  margin: 8px 0;
+  background: white;
+}
+
+.options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.options button {
+  padding: 15px 5px;
+  background: #edf2fa;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.options button:disabled {
+  opacity: 1;
+}
+
+.options button.correct {
+  background: #d4f6df;
+  border-color: #36a65b;
+}
+
+.options button.wrong {
+  background: #ffe0e0;
+  border-color: #e65b5b;
+}
+
+#feedback {
+  min-height: 30px;
+  font-weight: bold;
+  text-align: center;
+  margin: 15px 0;
+}
+
+.element-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+
+.element {
+  border: none;
+  border-radius: 9px;
+  background: #e6efff;
+  padding: 9px 3px;
+  text-align: center;
+}
+
+.element strong {
+  display: block;
+  font-size: 24px;
+  color: #315caa;
+}
+
+.element small {
+  display: block;
+  margin-top: 4px;
+}
+
+.element span {
+  font-size: 11px;
+  color: #66758a;
+}
+
+.progress {
+  height: 13px;
+  border-radius: 20px;
+  background: #e1e6ed;
+  overflow: hidden;
+}
+
+#bar {
+  height: 100%;
+  width: 0%;
+  background: #43b879;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  color: #8892a0;
+  font-size: 12px;
+}
+
+@media (min-width: 600px) {
+  .element-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⚛ 周期表マスター118</h1>
+  <p>118個の元素を完全制覇しよう！</p>
+</header>
+
+<nav>
+  <button class="active" onclick="show('home',this)">ホーム</button>
+  <button onclick="show('list',this)">周期表</button>
+  <button onclick="show('card',this)">暗記カード</button>
+  <button onclick="show('quiz',this)">4択クイズ</button>
+  <button onclick="show('input',this)">入力テスト</button>
+</nav>
+
+<main>
+
+<!-- ホーム -->
+<section id="home" class="panel active">
+
+<div class="box">
+  <h2>元素マスターへの道</h2>
+  <p>全118元素を覚えよう！</p>
+
+  <div style="font-size:35px;font-weight:bold;text-align:center">
+    <span id="total">118</span>
+    <span style="font-size:16px">元素</span>
+  </div>
+
+  <p>これまでの正解数</p>
+  <div class="progress">
+    <div id="bar"></div>
+  </div>
+  <p id="scoreText">0問正解</p>
+</div>
+
+<div class="box">
+  <h2>おすすめの勉強方法</h2>
+  <p>① 周期表で118個を確認する</p>
+  <p>② 暗記カードで名前と記号を覚える</p>
+  <p>③ 4択クイズに挑戦する</p>
+  <p>④ 入力テストで完璧にする</p>
+</div>
+
+<div class="box">
+  <h2>今日も勉強しよう！</h2>
+  <button class="action" onclick="show('card')">
+    暗記カードを始める
+  </button>
+  <button class="action" onclick="show('quiz')">
+    4択クイズに挑戦する
+  </button>
+</div>
+
+</section>
+
+<!-- 周期表 -->
+<section id="list" class="panel">
+
+<div class="box">
+  <h2>118元素一覧</h2>
+  <p class="sub">元素を押すと詳しい情報が見られるよ。</p>
+  <input id="search" placeholder="元素名・記号・番号で検索" oninput="makeList()">
+  <div id="elements" class="element-grid"></div>
+</div>
+
+<div class="box" id="detail" style="display:none;text-align:center">
+  <h2>元素の情報</h2>
+  <div id="detailContent"></div>
+</div>
+
+</section>
+
+<!-- 暗記カード -->
+<section id="card" class="panel">
+
+<div class="box" style="text-align:center">
+
+<h2>暗記カード</h2>
+<p class="sub">カードをめくって3つの情報を覚えよう。</p>
+
+<div id="cardNumber" class="sub">原子番号 1</div>
+<div id="cardSymbol" class="big">H</div>
+
+<h2 id="cardName">水素</h2>
+
+<div id="cardAnswer" style="display:none">
+  <hr>
+  <p>原子番号</p>
+  <h2 id="cardNumber2">1</h2>
+  <p>元素記号</p>
+  <h2 id="cardSymbol2">H</h2>
+  <p>元素名</p>
+  <h2 id="cardName2">水素</h2>
+</div>
+
+<button class="action" onclick="flipCard()">答えを確認する</button>
+<button class="action" onclick="nextCard()">次の元素 →</button>
+
+</div>
+
+</section>
+
+<!-- 4択クイズ -->
+<section id="quiz" class="panel">
+
+<div class="box">
+
+<h2>4択クイズ</h2>
+
+<p id="quizCount" class="sub">問題 1</p>
+
+<h2 id="question" style="text-align:center">
+水素の元素記号は？
+</h2>
+
+<div class="options" id="choices"></div>
+
+<div id="feedback"></div>
+
+<button class="action" onclick="nextQuiz()">次の問題 →</button>
+
+</div>
+
+<div class="box">
+  <p>正解数：<strong id="quizScore">0</strong></p>
+</div>
+
+</section>
+
+<!-- 入力テスト -->
+<section id="input" class="panel">
+
+<div class="box">
+
+<h2>入力テスト</h2>
+<p class="sub">自分の力で答えを入力しよう！</p>
+
+<p id="inputQuestion" style="font-size:20px;font-weight:bold">
+原子番号1の元素記号は？
+</p>
+
+<input id="answer" placeholder="答えを入力">
+
+<button class="action" onclick="checkInput()">回答する</button>
+
+<div id="inputFeedback" style="text-align:center;margin:15px;font-weight:bold"></div>
+
+<button class="action" onclick="nextInput()">次の問題 →</button>
+
+</div>
+
+<div class="box">
+<h2>出題形式</h2>
+
+<select id="inputMode" onchange="nextInput()">
+  <option value="symbol">原子番号 → 元素記号</option>
+  <option value="name">原子番号 → 元素名</option>
+  <option value="number">元素記号 → 原子番号</option>
+  <option value="symbol2">元素名 → 元素記号</option>
+  <option value="all">ランダム</option>
+</select>
+
+</div>
+
+</section>
+
+</main>
+
+<footer>
+周期表マスター118
+</footer>
+
+<script>
+
+const data = [
+[1,"H","水素"],
+[2,"He","ヘリウム"],
+[3,"Li","リチウム"],
+[4,"Be","ベリリウム"],
+[5,"B","ホウ素"],
+[6,"C","炭素"],
+[7,"N","窒素"],
+[8,"O","酸素"],
+[9,"F","フッ素"],
+[10,"Ne","ネオン"],
+[11,"Na","ナトリウム"],
+[12,"Mg","マグネシウム"],
+[13,"Al","アルミニウム"],
+[14,"Si","ケイ素"],
+[15,"P","リン"],
+[16,"S","硫黄"],
+[17,"Cl","塩素"],
+[18,"Ar","アルゴン"],
+[19,"K","カリウム"],
+[20,"Ca","カルシウム"],
+[21,"Sc","スカンジウム"],
+[22,"Ti","チタン"],
+[23,"V","バナジウム"],
+[24,"Cr","クロム"],
+[25,"Mn","マンガン"],
+[26,"Fe","鉄"],
+[27,"Co","コバルト"],
+[28,"Ni","ニッケル"],
+[29,"Cu","銅"],
+[30,"Zn","亜鉛"],
+[31,"Ga","ガリウム"],
+[32,"Ge","ゲルマニウム"],
+[33,"As","ヒ素"],
+[34,"Se","セレン"],
+[35,"Br","臭素"],
+[36,"Kr","クリプトン"],
+[37,"Rb","ルビジウム"],
+[38,"Sr","ストロンチウム"],
+[39,"Y","イットリウム"],
+[40,"Zr","ジルコニウム"],
+[41,"Nb","ニオブ"],
+[42,"Mo","モリブデン"],
+[43,"Tc","テクネチウム"],
+[44,"Ru","ルテニウム"],
+[45,"Rh","ロジウム"],
+[46,"Pd","パラジウム"],
+[47,"Ag","銀"],
+[48,"Cd","カドミウム"],
+[49,"In","インジウム"],
+[50,"Sn","スズ"],
+[51,"Sb","アンチモン"],
+[52,"Te","テルル"],
+[53,"I","ヨウ素"],
+[54,"Xe","キセノン"],
+[55,"Cs","セシウム"],
+[56,"Ba","バリウム"],
+[57,"La","ランタン"],
+[58,"Ce","セリウム"],
+[59,"Pr","プラセオジム"],
+[60,"Nd","ネオジム"],
+[61,"Pm","プロメチウム"],
+[62,"Sm","サマリウム"],
+[63,"Eu","ユウロピウム"],
+[64,"Gd","ガドリニウム"],
+[65,"Tb","テルビウム"],
+[66,"Dy","ジスプロシウム"],
+[67,"Ho","ホルミウム"],
+[68,"Er","エルビウム"],
+[69,"Tm","ツリウム"],
+[70,"Yb","イッテルビウム"],
+[71,"Lu","ルテチウム"],
+[72,"Hf","ハフニウム"],
+[73,"Ta","タンタル"],
+[74,"W","タングステン"],
+[75,"Re","レニウム"],
+[76,"Os","オスミウム"],
+[77,"Ir","イリジウム"],
+[78,"Pt","白金"],
+[79,"Au","金"],
+[80,"Hg","水銀"],
+[81,"Tl","タリウム"],
+[82,"Pb","鉛"],
+[83,"Bi","ビスマス"],
+[84,"Po","ポロニウム"],
+[85,"At","アスタチン"],
+[86,"Rn","ラドン"],
+[87,"Fr","フランシウム"],
+[88,"Ra","ラジウム"],
+[89,"Ac","アクチニウム"],
+[90,"Th","トリウム"],
+[91,"Pa","プロトアクチニウム"],
+[92,"U","ウラン"],
+[93,"Np","ネプツニウム"],
+[94,"Pu","プルトニウム"],
+[95,"Am","アメリシウム"],
+[96,"Cm","キュリウム"],
+[97,"Bk","バークリウム"],
+[98,"Cf","カリホルニウム"],
+[99,"Es","アインスタイニウム"],
+[100,"Fm","フェルミウム"],
+[101,"Md","メンデレビウム"],
+[102,"No","ノーベリウム"],
+[103,"Lr","ローレンシウム"],
+[104,"Rf","ラザホージウム"],
+[105,"Db","ドブニウム"],
+[106,"Sg","シーボーギウム"],
+[107,"Bh","ボーリウム"],
+[108,"Hs","ハッシウム"],
+[109,"Mt","マイトネリウム"],
+[110,"Ds","ダームスタチウム"],
+[111,"Rg","レントゲニウム"],
+[112,"Cn","コペルニシウム"],
+[113,"Nh","ニホニウム"],
+[114,"Fl","フレロビウム"],
+[115,"Mc","モスコビウム"],
+[116,"Lv","リバモリウム"],
+[117,"Ts","テネシン"],
+[118,"Og","オガネソン"]
+];
+
+// 学習記録
+let score = Number(localStorage.getItem("periodicScore")) || 0;
+
+function updateScore() {
+  localStorage.setItem("periodicScore",score);
+  document.getElementById("scoreText").textContent =
+    score + "問正解";
+  document.getElementById("bar").style.width =
+    Math.min(score / 118 * 100,100) + "%";
+}
+
+updateScore();
+
+// 画面切り替え
+function show(id,btn) {
+  document.querySelectorAll(".panel").forEach(p=>{
+    p.classList.remove("active");
+  });
+
+  document.getElementById(id).classList.add("active");
+
+  document.querySelectorAll("nav button").forEach(b=>{
+    b.classList.remove("active");
+  });
+
+  if(btn) {
+    btn.classList.add("active");
+  } else {
+    document.querySelectorAll("nav button").forEach(b=>{
+      if(b.getAttribute("onclick").includes(id)) {
+        b.classList.add("active");
+      }
+    });
+  }
+}
+
+// 周期表
+function makeList() {
+  let word = document.getElementById("search").value.toLowerCase();
+
+  document.getElementById("elements").innerHTML = "";
+
+  data.forEach(e=>{
+    if(
+      String(e[0]).includes(word) ||
+      e[1].toLowerCase().includes(word) ||
+      e[2].includes(word)
+    ) {
+      let b = document.createElement("button");
+      b.className = "element";
+
+      b.innerHTML =
+        "<span>" + e[0] + "</span>" +
+        "<strong>" + e[1] + "</strong>" +
+        "<small>" + e[2] + "</small>";
+
+      b.onclick = ()=>detail(e);
+
+      document.getElementById("elements").appendChild(b);
+    }
+  });
+}
+
+function detail(e) {
+  let box = document.getElementById("detail");
+  box.style.display = "block";
+
+  document.getElementById("detailContent").innerHTML =
+    "<div class='big'>" + e[1] + "</div>" +
+    "<h2>" + e[2] + "</h2>" +
+    "<p>原子番号：" + e[0] + "</p>";
+
+  box.scrollIntoView({behavior:"smooth"});
+}
+
+makeList();
+
+// 暗記カード
+let cardIndex = 0;
+let flipped = false;
+
+function updateCard() {
+  let e = data[cardIndex];
+
+  document.getElementById("cardNumber").textContent =
+    "原子番号 " + e[0];
+
+  document.getElementById("cardSymbol").textContent = e[1];
+  document.getElementById("cardName").textContent = e[2];
+
+  document.getElementById("cardNumber2").textContent = e[0];
+  document.getElementById("cardSymbol2").textContent = e[1];
+  document.getElementById("cardName2").textContent = e[2];
+
+  document.getElementById("cardAnswer").style.display = "none";
+  flipped = false;
+}
+
+function flipCard() {
+  flipped = !flipped;
+
+  document.getElementById("cardAnswer").style.display =
+    flipped ? "block" : "none";
+}
+
+function nextCard() {
+  cardIndex = (cardIndex + 1) % data.length;
+  updateCard();
+}
+
+updateCard();
+
+// 4択クイズ
+let currentQuiz;
+let quizScore = 0;
+let quizCount = 0;
+let answered = false;
+
+function randomElement() {
+  return data[Math.floor(Math.random()*data.length)];
+}
+
+function shuffle(a) {
+  return a.sort(()=>Math.random()-0.5);
+}
+
+function nextQuiz() {
+  currentQuiz = randomElement();
+  answered = false;
+  quizCount++;
+
+  let mode = Math.floor(Math.random()*3);
+  let question = "";
+  let answer = "";
+
+  if(mode===0) {
+    question = currentQuiz[2] + " の元素記号は？";
+    answer = currentQuiz[1];
+  } else if(mode===1) {
+    question = "原子番号 " + currentQuiz[0] + " の元素名は？";
+    answer = currentQuiz[2];
+  } else {
+    question = currentQuiz[1] + " の原子番号は？";
+    answer = String(currentQuiz[0]);
+  }
+
+  document.getElementById("question").textContent = question;
+  document.getElementById("quizCount").textContent =
+    "問題 " + quizCount;
+
+  let choices = [answer];
+
+  while(choices.length < 4) {
+    let e = randomElement();
+    let value =
+      mode===0 ? e[1] :
+      mode===1 ? e[2] :
+      String(e[0]);
+
+    if(!choices.includes(value)) choices.push(value);
+  }
+
+  shuffle(choices);
+
+  let area = document.getElementById("choices");
+  area.innerHTML = "";
+
+  choices.forEach(c=>{
+    let b = document.createElement("button");
+    b.textContent = c;
+
+    b.onclick = ()=>{
+      if(answered) return;
+      answered = true;
+
+      if(c===answer) {
+        b.classList.add("correct");
+        document.getElementById("feedback").textContent = "⭕ 正解！";
+        quizScore++;
+        score++;
+        updateScore();
+      } else {
+        b.classList.add("wrong");
+        document.getElementById("feedback").textContent =
+          "❌ 不正解！ 正解は " + answer;
+      }
+
+      document.getElementById("quizScore").textContent = quizScore;
+
+      Array.from(area.children).forEach(button=>{
+        button.disabled = true;
+        if(button.textContent===answer) {
+          button.classList.add("correct");
+        }
+      });
+    };
+
+    area.appendChild(b);
+  });
+
+  document.getElementById("feedback").textContent = "";
+}
+
+nextQuiz();
+
+// 入力テスト
+let inputElement;
+let inputAnswer = "";
+let inputDone = false;
+
+function nextInput() {
+  inputElement = randomElement();
+  inputDone = false;
+
+  document.getElementById("answer").value = "";
+  document.getElementById("inputFeedback").textContent = "";
+
+  let mode = document.getElementById("inputMode").value;
+
+  if(mode==="all") {
+    mode = ["symbol","name","number","symbol2"][
+      Math.floor(Math.random()*4)
+    ];
+  }
+
+  let q = "";
+
+  if(mode==="symbol") {
+    q = "原子番号 " + inputElement[0] + " の元素記号は？";
+    inputAnswer = inputElement[1];
+  }
+
+  if(mode==="name") {
+    q = "原子番号 " + inputElement[0] + " の元素名は？";
+    inputAnswer = inputElement[2];
+  }
+
+  if(mode==="number") {
+    q = inputElement[1] + " の原子番号は？";
+    inputAnswer = String(inputElement[0]);
+  }
+
+  if(mode==="symbol2") {
+    q = inputElement[2] + " の元素記号は？";
+    inputAnswer = inputElement[1];
+  }
+
+  document.getElementById("inputQuestion").textContent = q;
+}
+
+function checkInput() {
+  if(inputDone) return;
+
+  let value = document.getElementById("answer").value.trim();
+
+  if(value.toLowerCase()===inputAnswer.toLowerCase()) {
+    document.getElementById("inputFeedback").textContent =
+      "⭕ 正解！";
+
+    score++;
+    updateScore();
+  } else {
+    document.getElementById("inputFeedback").textContent =
+      "❌ 正解は " + inputAnswer;
+  }
+
+  inputDone = true;
+}
+
+document.getElementById("answer").addEventListener("keydown",e=>{
+  if(e.key==="Enter") checkInput();
+});
+
+nextInput();
+
+</script>
+
+</body>
+</html>
