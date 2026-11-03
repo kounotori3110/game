@@ -212,6 +212,51 @@ footer {
   font-size: 12px;
 }
 
+/* 暗記カード */
+.flashcard {
+  min-height: 230px;
+  background: linear-gradient(135deg,#f7faff,#dce9ff);
+  border: 3px solid #315caa;
+  border-radius: 18px;
+  padding: 24px 12px;
+  margin: 15px 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.flashcard .card-label {
+  color: #68758a;
+  font-size: 14px;
+  margin: 5px;
+}
+.flashcard .card-value {
+  font-size: 30px;
+  font-weight: bold;
+  margin: 7px;
+  color: #243b65;
+}
+.card-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.card-controls button {
+  padding: 13px 5px;
+  border: none;
+  border-radius: 10px;
+  background: #e3eaf5;
+  font-weight: bold;
+  font-size: 15px;
+}
+.setting-label {
+  display: block;
+  font-weight: bold;
+  margin-top: 12px;
+}
+
 @media (min-width: 600px) {
   .element-grid {
     grid-template-columns: repeat(5, 1fr);
@@ -297,30 +342,37 @@ footer {
 <section id="card" class="panel">
 
 <div class="box" style="text-align:center">
+  <h2>暗記カード</h2>
+  <p class="sub">表の2つの情報を見て、残りの1つを考えよう！</p>
 
-<h2>暗記カード</h2>
-<p class="sub">カードをめくって3つの情報を覚えよう。</p>
+  <label class="setting-label" for="cardOrder">カードの順番</label>
+  <select id="cardOrder" onchange="resetCards()">
+    <option value="ordered">順番（1番から）</option>
+    <option value="random">ランダム</option>
+  </select>
 
-<div id="cardNumber" class="sub">原子番号 1</div>
-<div id="cardSymbol" class="big">H</div>
+  <p id="cardPosition" class="sub">1 / 118</p>
 
-<h2 id="cardName">水素</h2>
+  <div id="flashcard" class="flashcard" onclick="flipCard()">
+    <div id="cardFront">
+      <p class="card-label">原子番号</p>
+      <div id="frontNumber" class="card-value">1</div>
+      <p class="card-label">元素記号</p>
+      <div id="frontSymbol" class="card-value">H</div>
+    </div>
+    <div id="cardBack" style="display:none">
+      <p class="card-label" id="answerLabel">元素名</p>
+      <div id="answerValue" class="card-value">水素</div>
+    </div>
+  </div>
 
-<div id="cardAnswer" style="display:none">
-  <hr>
-  <p>原子番号</p>
-  <h2 id="cardNumber2">1</h2>
-  <p>元素記号</p>
-  <h2 id="cardSymbol2">H</h2>
-  <p>元素名</p>
-  <h2 id="cardName2">水素</h2>
+  <p id="cardHint" class="sub">カードをタップすると裏返るよ！</p>
+  <button class="action" onclick="flipCard()">カードをめくる / 戻す</button>
+  <div class="card-controls">
+    <button onclick="previousCard()">← 前へ</button>
+    <button onclick="nextCard()">次へ →</button>
+  </div>
 </div>
-
-<button class="action" onclick="flipCard()">答えを確認する</button>
-<button class="action" onclick="nextCard()">次の元素 →</button>
-
-</div>
-
 </section>
 
 <!-- 4択クイズ -->
@@ -329,6 +381,12 @@ footer {
 <div class="box">
 
 <h2>4択クイズ</h2>
+
+<label class="setting-label" for="quizOrder">問題の順番</label>
+<select id="quizOrder" onchange="resetQuiz()">
+  <option value="random">ランダム</option>
+  <option value="ordered">順番（1番から）</option>
+</select>
 
 <p id="quizCount" class="sub">問題 1</p>
 
@@ -595,44 +653,77 @@ makeList();
 
 // 暗記カード
 let cardIndex = 0;
+let cardOrder = [];
 let flipped = false;
+let cardAnswerIndex = 2;
+
+function makeCardOrder() {
+  cardOrder = data.map((_,i)=>i);
+  if(document.getElementById("cardOrder").value==="random") {
+    shuffle(cardOrder);
+  }
+}
+
+function resetCards() {
+  cardIndex = 0;
+  makeCardOrder();
+  updateCard();
+}
 
 function updateCard() {
-  let e = data[cardIndex];
+  let e = data[cardOrder[cardIndex]];
+  // 3つの情報から2つを表に、残り1つを裏にする
+  let pairs = [[0,1,2],[0,2,1],[1,2,0]];
+  let pair = pairs[Math.floor(Math.random()*pairs.length)];
+  let values = [String(e[0]),e[1],e[2]];
+  let labels = ["原子番号","元素記号","元素名"];
 
-  document.getElementById("cardNumber").textContent =
-    "原子番号 " + e[0];
+  document.getElementById("frontNumber").textContent =
+    labels[pair[0]] + "：" + values[pair[0]];
+  document.getElementById("frontSymbol").textContent =
+    labels[pair[1]] + "：" + values[pair[1]];
+  document.getElementById("answerLabel").textContent =
+    labels[pair[2]];
+  document.getElementById("answerValue").textContent =
+    values[pair[2]];
 
-  document.getElementById("cardSymbol").textContent = e[1];
-  document.getElementById("cardName").textContent = e[2];
+  document.getElementById("cardPosition").textContent =
+    (cardIndex+1) + " / " + data.length;
 
-  document.getElementById("cardNumber2").textContent = e[0];
-  document.getElementById("cardSymbol2").textContent = e[1];
-  document.getElementById("cardName2").textContent = e[2];
-
-  document.getElementById("cardAnswer").style.display = "none";
   flipped = false;
+  document.getElementById("cardFront").style.display = "block";
+  document.getElementById("cardBack").style.display = "none";
+  document.getElementById("cardHint").textContent =
+    "カードをタップすると裏返るよ！";
 }
 
 function flipCard() {
   flipped = !flipped;
-
-  document.getElementById("cardAnswer").style.display =
+  document.getElementById("cardFront").style.display =
+    flipped ? "none" : "block";
+  document.getElementById("cardBack").style.display =
     flipped ? "block" : "none";
+  document.getElementById("cardHint").textContent =
+    flipped ? "答えを確認できたら、次のカードへ！" :
+    "カードをタップすると裏返るよ！";
 }
 
 function nextCard() {
-  cardIndex = (cardIndex + 1) % data.length;
+  cardIndex = (cardIndex + 1) % cardOrder.length;
   updateCard();
 }
 
-updateCard();
+function previousCard() {
+  cardIndex = (cardIndex - 1 + cardOrder.length) % cardOrder.length;
+  updateCard();
+}
 
 // 4択クイズ
 let currentQuiz;
 let quizScore = 0;
 let quizCount = 0;
 let answered = false;
+let orderedQuizIndex = 0;
 
 function randomElement() {
   return data[Math.floor(Math.random()*data.length)];
@@ -642,8 +733,20 @@ function shuffle(a) {
   return a.sort(()=>Math.random()-0.5);
 }
 
+function resetQuiz() {
+  orderedQuizIndex = 0;
+  quizCount = 0;
+  nextQuiz();
+}
+
 function nextQuiz() {
-  currentQuiz = randomElement();
+  let orderMode = document.getElementById("quizOrder").value;
+  if(orderMode==="ordered") {
+    currentQuiz = data[orderedQuizIndex % data.length];
+    orderedQuizIndex++;
+  } else {
+    currentQuiz = randomElement();
+  }
   answered = false;
   quizCount++;
 
